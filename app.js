@@ -1,54 +1,133 @@
-/* Gift Haveli — front-end. Catalogue, orders and tracking go through the Apps Script backend (D.api). */
+/* Gift Haveli — front-end (clean URLs, product pages, box builder).
+   Catalogue, orders and tracking go through the Apps Script backend (D.api). */
 (() => {
   const D = window.GH, $ = (s, r = document) => r.querySelector(s), app = $("#app");
   const rs = n => "Rs " + Number(n).toLocaleString("en-PK");
   const icon = (k, cls = "") => `<svg viewBox="0 0 64 64" class="${cls}">${D.icons[k] || D.icons.box}</svg>`;
-  const pic = (id, ic, alt) => D.photos.has(id) ? `<img src="p/${id}.jpg" alt="${String(alt || "").replace(/"/g, "")}" loading="lazy">` : icon(ic);
+  const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const slug = t => String(t).toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const catIcon = c => D.catIcons[c] || "box";
+  const askWa = t => `https://wa.me/${D.whatsapp}?text=${encodeURIComponent(t)}`;
+  const freeLine = () => D.freeAbove ? `Rs ${D.delivery} per order. Free on orders above ${rs(D.freeAbove)}.` : `Rs ${D.delivery} per order.`;
+  const price = p => p && p.price ? rs(p.price) : "Rs 0000";
+  const SITE = "https://gifthaveli.navifexpro.com";
+  // image ref: "p/..." = file on this site, anything else = Drive file ID shared by link
+  const src = (ref, w = 900) => !ref ? "" : /^(p|assets)\//.test(ref) ? "/" + ref : /^https?:/.test(ref) ? ref : `https://lh3.googleusercontent.com/d/${ref}=w${w}`;
+  const mainImg = x => x && x.gallery && x.gallery[0] ? src(x.gallery[0]) : "";
+  const pic = (x, ic, alt) => mainImg(x) ? `<img src="${mainImg(x)}" alt="${esc(alt || x.name)}" loading="lazy">` : icon(ic || "box");
   const store = {
     get() { try { return JSON.parse(localStorage.getItem("gh_cart") || "[]"); } catch (e) { return mem; } },
     set(v) { mem = v; try { localStorage.setItem("gh_cart", JSON.stringify(v)); } catch (e) {} updCount(); }
   };
   let mem = [];
-  const updCount = () => $("#cartCount").textContent = store.get().length;
+  const updCount = () => { const c = $("#cartCount"); if (c) c.textContent = store.get().length; };
   const toast = t => { const el = $("#toast"); el.textContent = t; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 2200); };
-  const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const price = p => p.price ? rs(p.price) : "Rs 0000";
-  const priceShort = p => p.price ? rs(p.price) : "Rs 0000";
-  const slug = t => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const catIcon = c => D.catIcons[c] || "box";
-  const askWa = t => `https://wa.me/${D.whatsapp}?text=${encodeURIComponent(t)}`;
-  const freeLine = () => D.freeAbove ? `Rs ${D.delivery} per order. Free on orders above ${rs(D.freeAbove)}.` : `Rs ${D.delivery} per order.`;
   const photos = {};   // cart photos live in memory only (too big for browser storage)
   let ready = false, loadErr = "";
 
+  /* ---------- lookups ---------- */
+  const all = () => [...D.products, ...D.boxes, ...D.fillers, ...D.addons];
+  const byId = id => all().find(x => x.id === id);
+  const pslug = p => slug(p.name) + (all().filter(x => slug(x.name) === slug(p.name)).length > 1 ? "-" + p.id.toLowerCase() : "");
+  const pUrl = p => "/product/" + pslug(p);
+  const rUrl = r => "/ready/" + slug(r.name);
+  const bUrl = b => "/box/" + pslug(b);
+  const readyList = () => (D.ready || []).filter(r => D.boxes.some(b => b.id === r.box));
+  const rParts = r => r.items.map(byId).filter(Boolean);
+  const rTotal = r => { const xs = [byId(r.box), ...rParts(r)]; return xs.every(x => x && x.price) ? xs.reduce((s, x) => s + x.price, 0) : 0; };
+  const customLabel = c => ({ photo: "Add a photo", text: "Add a name", both: "Photo + name", none: "Ready to gift" })[c] || "Gift";
+  const descFor = p => p.desc || ({
+    photo: `Upload your photo and we print it on your ${p.name.toLowerCase()}. You will see a preview before you order.`,
+    text: `Add a name or short message and we make your ${p.name.toLowerCase()} just for them. You will see a preview before you order.`,
+    both: `Add a photo, a name or a short message and we make your ${p.name.toLowerCase()} just for them. You will see a preview before you order.`,
+    none: `${p.name} from Gift Haveli, ready to gift.`
+  })[p.custom] || "";
+
+  /* ---------- page meta (title, description, canonical, JSON-LD) ---------- */
+  function meta(title, desc, path, ld, img) {
+    document.title = title;
+    const set = (sel, attr, val, mk) => { let el = document.head.querySelector(sel); if (!el) { el = document.createElement(mk[0]); Object.entries(mk[1]).forEach(([k, v]) => el.setAttribute(k, v)); document.head.appendChild(el); } el.setAttribute(attr, val); };
+    set('meta[name="description"]', "content", desc, ["meta", { name: "description" }]);
+    set('link[rel="canonical"]', "href", SITE + path, ["link", { rel: "canonical" }]);
+    set('meta[property="og:title"]', "content", title, ["meta", { property: "og:title" }]);
+    set('meta[property="og:description"]', "content", desc, ["meta", { property: "og:description" }]);
+    set('meta[property="og:url"]', "content", SITE + path, ["meta", { property: "og:url" }]);
+    set('meta[property="og:image"]', "content", img ? (img.startsWith("http") ? img : SITE + img) : SITE + "/hero-hamper.jpg", ["meta", { property: "og:image" }]);
+    let s = document.getElementById("ld-page");
+    if (!s) { s = document.createElement("script"); s.type = "application/ld+json"; s.id = "ld-page"; document.head.appendChild(s); }
+    s.textContent = ld ? JSON.stringify(ld) : "{}";
+  }
+  const crumbs = list => ({ "@type": "BreadcrumbList", itemListElement: list.map(([n, u], i) => ({ "@type": "ListItem", position: i + 1, name: n, item: SITE + u })) });
+  const productLd = (p, url) => ({ "@context": "https://schema.org", "@graph": [{
+    "@type": "Product", name: p.name, sku: p.id, category: p.cat, description: descFor(p), image: (p.gallery || []).map(g => { const u = src(g); return u.startsWith("http") ? u : SITE + u; }),
+    brand: { "@type": "Brand", name: "Gift Haveli" },
+    ...(p.price ? { offers: { "@type": "Offer", priceCurrency: "PKR", price: p.price, availability: "https://schema.org/InStock", url: SITE + url } } : {})
+  }, crumbs([["Home", "/"], ["Customize", "/customize"], ...(p.cat ? [[p.cat, "/category/" + slug(p.cat)]] : []), [p.name, url]])] });
+
+  /* ---------- cards ---------- */
+  const card = (p, tag) => `<a class="prod" href="${pUrl(p)}"><div class="ph">${pic(p, catIcon(p.cat))}</div><div class="in">
+    <span class="tag">${esc(tag || p.cat || customLabel(p.custom))}</span><h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>
+    <span class="btn sm" style="margin-top:auto">${p.custom === "none" ? "View" : "Customize"}</span></div></a>`;
+  const rCard = r => `<a class="prod" href="${rUrl(r)}"><div class="ph">${r.gallery && r.gallery[0] ? `<img src="${src(r.gallery[0])}" alt="${esc(r.name)} gift box" loading="lazy">` : boxSvg(byId(r.box), r.items)}</div><div class="in">
+    <span class="tag">Ready-made box</span><h3>${esc(r.name)}</h3><p class="muted" style="font-size:.88rem;margin:0">${esc(rParts(r).map(x => x.name).join(", "))}</p>
+    <span class="price">${rTotal(r) ? rs(rTotal(r)) : "Rs 0000"}</span><span class="btn sm" style="margin-top:auto">View box</span></div></a>`;
+  const loading = () => `<p class="muted">${loadErr || "Loading…"}</p>`;
+
+  /* ---------- box drawing (top view, items inside) ---------- */
+  const boxColor = n => /red/i.test(n) ? "#8E1F35" : /white/i.test(n) ? "#EFE3CF" : /black/i.test(n) ? "#2B0F17" : /gold/i.test(n) ? "#B8913F" : /blue/i.test(n) ? "#2E4A7A" : "#6A1B2E";
+  function boxSvg(box, items, text) {
+    if (!box) return icon("box");
+    const col = boxColor(box.name), heart = box.shape === "heart", n = items.length;
+    const cols = n <= 4 ? 2 : 3, rows = Math.max(1, Math.ceil(n / cols)), W = 320, H = heart ? 230 : 210, x0 = 100, y0 = heart ? 95 : 75;
+    const cw = W / cols, ch = Math.min(H / rows, cw);
+    const tiles = items.map((id, i) => {
+      const it = byId(id); if (!it) return "";
+      const cx = x0 + cw * (i % cols) + cw / 2, cy = y0 + ch * Math.floor(i / cols) + ch / 2 + (H - ch * rows) / 2, r = Math.min(cw, ch) / 2 - 8;
+      const im = mainImg(it);
+      return `<g class="item-pop"><clipPath id="c${i}"><circle cx="${cx}" cy="${cy}" r="${r}"/></clipPath><circle cx="${cx}" cy="${cy}" r="${r + 4}" fill="#FAF3E7" stroke="#C9A24B" stroke-width="2"/>
+        ${im ? `<image href="${im}" x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" preserveAspectRatio="xMidYMid slice" clip-path="url(#c${i})"/>` : `<g transform="translate(${cx - 18} ${cy - 18}) scale(.56)" fill="none" stroke="#6A1B2E" stroke-width="3">${D.icons[it.icon || catIcon(it.cat)] || D.icons.box}</g>`}</g>`;
+    }).join("");
+    const shape = heart
+      ? `<path d="M260 345 C95 255 60 120 160 80 C215 60 250 95 260 125 C270 95 305 60 360 80 C460 120 425 255 260 345Z" fill="${col}" stroke="#C9A24B" stroke-width="3"/><path d="M260 325 C120 245 92 135 165 102 C212 84 246 112 260 145 C274 112 308 84 355 102 C428 135 400 245 260 325Z" fill="rgba(0,0,0,.18)"/>`
+      : `<rect x="70" y="45" width="380" height="270" rx="16" fill="${col}" stroke="#C9A24B" stroke-width="3"/><rect x="86" y="61" width="348" height="238" rx="10" fill="rgba(0,0,0,.2)"/><path d="M86 61 L434 61" stroke="rgba(255,255,255,.15)"/>`;
+    const paper = heart ? "" : Array.from({ length: 18 }, (_, i) => `<path d="M${96 + (i * 37) % 330} ${70 + (i * 53) % 220} q8 -6 16 0 t16 0" stroke="#E9C9C3" stroke-width="2" fill="none" opacity=".35"/>`).join("");
+    return `<svg viewBox="0 0 520 380" role="img" aria-label="${esc(box.name)} with ${n} items">${shape}${paper}${tiles}
+      ${text ? `<text x="260" y="370" text-anchor="middle" font-family="Fraunces" font-style="italic" font-size="22" fill="#C9A24B">${esc(text)}</text>` : ""}</svg>`;
+  }
+
   /* ---------- pages ---------- */
   const pages = {
-    "/": () => `
+    "/": () => {
+      meta("Gift Haveli — Personalised Gifts & Gift Boxes, Delivered All Over Pakistan",
+        "Customized gift boxes, hampers, chocolate bouquets, photo mugs, frames, lamps and Nikkah gifts. Build your own gift box and send it anywhere in Pakistan — overseas Pakistanis welcome.", "/",
+        { "@context": "https://schema.org", "@type": "WebSite", name: "Gift Haveli", url: SITE + "/" });
+      const featured = D.products.filter(p => /hamper|box|bouquet|basket/i.test(p.cat));
+      return `
       <section class="hero"><div class="hero-bg"></div>
         <div class="wrap">
-          <p class="eyebrow fade-up">Personalised gifts · Delivery all over Pakistan</p>
+          <p class="eyebrow fade-up">Customized gifts · Delivery all over Pakistan</p>
           <h1 class="fade-up d1">Gifts that feel like home.</h1>
           <p class="fade-up d2">Choose a box, fill it with things they love, add a name, a photo or a few words — and we deliver it to their door, anywhere in Pakistan.</p>
-          <div class="actions fade-up d3"><a class="btn gold" href="#/build">Build your gift box</a><a class="btn ghost" href="#/customize">Personalise a gift</a></div>
+          <div class="actions fade-up d3"><a class="btn gold" href="/build">Build your gift box</a><a class="btn ghost" href="/customize">Customize a gift</a></div>
         </div>
       </section>
       <section class="block"><div class="wrap">
         <p class="eyebrow">Ready to gift</p><h2>Ready-made boxes, hampers & bouquets</h2>
         <p class="muted" style="max-width:60ch">Complete gifts, already put together. Nothing to choose — just order and we deliver.</p>
-        <div class="grid prods" style="margin-top:26px">${ready ? readyGifts() : `<p class="muted">${loadErr || "Loading…"}</p>`}</div>
+        <div class="grid prods" style="margin-top:26px">${ready || D.products.length ? [...readyList().map(rCard), ...featured.map(p => card(p))].join("") : loading()}</div>
       </div></section>
       <section class="block" style="padding-top:0"><div class="wrap">
         <p class="eyebrow">Shop by category</p><h2>Something for every someone</h2>
-        <div class="grid cats" style="margin-top:26px">${D.categories.length ? D.categories.map(c => `<a class="cat" href="#/customize?c=${c.id}">${icon(c.icon)}<b>${esc(c.name)}</b></a>`).join("") : `<p class="muted">${loadErr || "Loading…"}</p>`}</div>
+        <div class="grid cats" style="margin-top:26px">${D.categories.length ? D.categories.map(c => `<a class="cat" href="/category/${c.id}">${icon(c.icon)}<b>${esc(c.name)}</b></a>`).join("") : loading()}</div>
       </div></section>
       <section class="block" style="padding-top:0"><div class="wrap split">
-        <img src="hero-bouquet.jpg" alt="Red rose and chocolate bouquet wrapped in maroon and cream paper" loading="lazy">
+        <img src="/hero-bouquet.jpg" alt="Red rose and chocolate bouquet wrapped in maroon and cream paper" loading="lazy">
         <div><p class="eyebrow">Build a box</p><h2>Make it entirely theirs</h2>
-          <ol class="steps"><li><div><b>Pick a box</b><br><span class="muted">Heart, square, trunk or cube.</span></div></li>
-          <li><div><b>Fill it</b><br><span class="muted">Mugs, frames, roses, chocolates, keepsakes — add or remove anything.</span></div></li>
+          <ol class="steps"><li><div><b>Pick a box</b><br><span class="muted">Heart, square, suit or cube.</span></div></li>
+          <li><div><b>Fill it</b><br><span class="muted">Eatables, flowers, perfumes and customized items.</span></div></li>
           <li><div><b>Make it personal</b><br><span class="muted">A name, a photo, a message card.</span></div></li>
-          <li><div><b>We deliver</b><br><span class="muted">Anywhere in Pakistan. Watch the price update as you go.</span></div></li></ol>
-          <a class="btn" href="#/build">Start building</a></div>
+          <li><div><b>We deliver</b><br><span class="muted">Anywhere in Pakistan.</span></div></li></ol>
+          <a class="btn" href="/build">Start building</a></div>
       </div></section>
       <section class="block band"><div class="wrap">
         <p class="eyebrow">From anywhere to home</p><h2>Far from family? We'll take it home for you.</h2>
@@ -59,61 +138,119 @@
           <div class="card"><h3>Track every step</h3><p>Use your Order ID to see when it's made, shipped and delivered.</p></div>
         </div></div></section>
       <section class="block"><div class="wrap split">
-        <div><p class="eyebrow">Not sure what to give?</p><h2>Let us help you choose</h2><p class="muted">Tell us the occasion, who it's for and your budget. Our Gift Finder suggests gifts that fit.</p><a class="btn ghost" href="#/finder">Open Gift Finder</a></div>
-        <div class="card"><p class="eyebrow">For companies</p><h3>Corporate & bulk gifts</h3><p class="muted">Eid hampers, client gifts, branded mugs, shields and awards — made in bulk and delivered across Pakistan.</p><a class="btn sm" href="#/corporate">Corporate gifting</a></div>
-      </div></section>`,
-
-    "/customize": q => {
-      const cat = q.get("c") || "all";
-      const list = D.products.filter(p => cat === "all" || slug(p.cat) === cat);
-      return `<section class="page-head"><div class="wrap"><p class="eyebrow">Personalise</p><h1>Personalised gifts</h1>${ready ? "" : `<p class="note">${loadErr || "Loading gifts…"}</p>`}</div></section>
-      <section style="padding-bottom:70px"><div class="wrap">
-        <div class="tabs"><button class="tab ${cat === "all" ? "on" : ""}" data-c="all">All</button>${D.categories.map(c => `<button class="tab ${cat === c.id ? "on" : ""}" data-c="${c.id}">${esc(c.name)}</button>`).join("")}</div>
-        <div class="grid prods">${list.map(p => `
-          <article class="prod"><div class="ph">${pic(p.id, catIcon(p.cat), p.name)}</div><div class="in">
-            <span class="tag">${({ photo: "Add a photo", text: "Add a name", both: "Photo + name", none: "Ready to gift" })[p.custom] || "Gift"}</span>
-            <h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>
-            ${p.price ? `<button class="btn sm" data-p="${p.id}" style="margin-top:auto">${p.custom === "none" ? "Add to basket" : "Personalise"}</button>`
-              : `<a class="btn sm" style="margin-top:auto" target="_blank" rel="noopener" href="${askWa(`Assalam o Alaikum, I want to order ${p.name} (${p.id}).`)}">Order on WhatsApp</a>`}</div></article>`).join("")}</div>
+        <div><p class="eyebrow">Not sure what to give?</p><h2>Let us help you choose</h2><p class="muted">Tell us the occasion, who it's for and your budget. Our Gift Finder suggests gifts that fit.</p><a class="btn ghost" href="/finder">Open Gift Finder</a></div>
+        <div class="card"><p class="eyebrow">For companies</p><h3>Corporate & bulk gifts</h3><p class="muted">Eid hampers, client gifts, branded mugs, shields and awards — made in bulk and delivered across Pakistan.</p><a class="btn sm" href="/corporate">Corporate gifting</a></div>
       </div></section>`;
     },
 
-    "/build": () => !ready || !D.boxes.length || !D.fillers.length ? `<section class="page-head"><div class="wrap"><p class="eyebrow">Build a box</p><h1>Create your gift box</h1>
-        <p class="muted">${!ready ? (loadErr || "Loading…") : "Build a Box is opening soon. Tell us what you want and we'll make it for you."}</p>
-        ${ready ? `<a class="btn" target="_blank" rel="noopener" href="${askWa("Assalam o Alaikum, I want a custom gift box.")}">Plan my box on WhatsApp</a>` : ""}</div></section>`
-      : `<section class="page-head"><div class="wrap"><p class="eyebrow">Build a box</p><h1>Create your gift box</h1></div></section>
-      <section style="padding-bottom:70px"><div class="wrap builder">
-        <div class="stage" id="stage"></div>
-        <div>
-          <h3>1. Start with a ready box, or your own</h3>
-          <div class="opt-grid" id="ready">${readyList().map(r => `<button class="opt" data-r="${r.i}"><b>${r.name}</b><small>${r.items.length} items</small></button>`).join("")}<button class="opt" data-r="own"><b>Customize my own</b><small>Start empty</small></button></div>
-          <h3>2. Choose the box</h3>
-          <div class="opt-grid" id="boxes">${D.boxes.map(b => `<button class="opt" data-b="${b.id}">${D.photos.has(b.id) ? `<img class="oimg" src="p/${b.id}.jpg" alt="" loading="lazy">` : ""}<b>${esc(b.name)}</b><small>${esc(b.size)} in · ${priceShort(b)}</small></button>`).join("")}</div>
-          <h3>3. Fill it</h3>
-          <div class="opt-grid" id="fillers">${D.fillers.map(f => `<button class="opt" data-f="${f.id}">${D.photos.has(f.id) ? `<img class="oimg" src="p/${f.id}.jpg" alt="" loading="lazy">` : ""}<b>${esc(f.name)}</b><small>${priceShort(f)}</small></button>`).join("")}</div>
-          ${D.addons.length ? `<h3>4. Add-ons</h3>
-          <div class="opt-grid" id="addons">${D.addons.map(a => `<button class="opt" data-a="${a.id}">${D.photos.has(a.id) ? `<img class="oimg" src="p/${a.id}.jpg" alt="" loading="lazy">` : ""}<b>${esc(a.name)}</b><small>${priceShort(a)}</small></button>`).join("")}</div>` : ""}
-          <div class="field"><label>Name or message to print (optional)</label><input id="boxText" maxlength="40" placeholder="e.g. Happy Birthday Ammi"></div>
-          <button class="btn" id="addBox">Add box to basket</button>
-        </div></div></section>`,
+    "/customize": (q, rest) => {
+      const cat = rest[0] || "all", c = D.categories.find(x => x.id === cat);
+      const list = D.products.filter(p => cat === "all" || slug(p.cat) === cat);
+      const name = c ? c.name : "Customized gifts";
+      meta(c ? `${c.name} — Customized ${c.name} in Pakistan | Gift Haveli` : "Customized Gifts in Pakistan — Mugs, Frames, Lamps & More | Gift Haveli",
+        c ? `Customized ${c.name.toLowerCase()} with your name or photo. See a preview before you order. Delivery all over Pakistan.` : "Customized mugs, frames, lamps, cushions, jewellery, Nikkah items and more. Add a name or photo, see a preview, and we deliver all over Pakistan.",
+        c ? "/category/" + cat : "/customize", { "@context": "https://schema.org", "@graph": [{ "@type": "CollectionPage", name }, crumbs([["Home", "/"], ["Customize", "/customize"], ...(c ? [[c.name, "/category/" + cat]] : [])])] });
+      return `<section class="page-head"><div class="wrap"><p class="eyebrow">Customize</p><h1>${esc(name)}</h1>${ready ? "" : `<p class="note">${loadErr || "Loading gifts…"}</p>`}</div></section>
+      <section style="padding-bottom:70px"><div class="wrap">
+        <nav class="tabs" aria-label="Categories"><a class="tab ${cat === "all" ? "on" : ""}" href="/customize">All</a>${D.categories.map(x => `<a class="tab ${cat === x.id ? "on" : ""}" href="/category/${x.id}">${esc(x.name)}</a>`).join("")}</nav>
+        <div class="grid prods">${list.map(p => card(p)).join("")}</div>
+      </div></section>`;
+    },
 
-    "/finder": () => `<section class="page-head"><div class="wrap"><p class="eyebrow">Gift Finder</p><h1>Find the right gift</h1><p class="muted">Answer three quick questions.</p></div></section>
+    "/product": (q, rest) => {
+      const p = all().find(x => pslug(x) === rest[0]);
+      if (!p) return ready ? notFound() : `<section class="page-head"><div class="wrap">${loading()}</div></section>`;
+      const url = pUrl(p);
+      meta(`${p.name}${p.custom !== "none" ? " — Customized" : ""} | Gift Haveli Pakistan`, descFor(p).slice(0, 155), url, productLd(p, url), mainImg(p));
+      const g = (p.gallery || []).length ? p.gallery : [];
+      const custom = p.custom !== "none";
+      return `<section class="pdp"><div class="wrap">
+        <nav class="crumbs"><a href="/">Home</a> / <a href="/customize">Customize</a>${p.cat && D.categories.some(c => c.name === p.cat) ? ` / <a href="/category/${slug(p.cat)}">${esc(p.cat)}</a>` : ""}</nav>
+        <div class="pdp-grid">
+          <div class="gal">
+            <div class="gal-main">${g.length ? `<img id="galMain" src="${src(g[0], 1200)}" alt="${esc(p.name)}">` : icon(catIcon(p.cat), "big")}</div>
+            ${g.length > 1 ? `<div class="gal-thumbs">${g.map((x, i) => `<button class="${i ? "" : "on"}" data-g="${esc(src(x, 1200))}" aria-label="Photo ${i + 1}"><img src="${src(x, 300)}" alt="" loading="lazy"></button>`).join("")}</div>` : ""}
+          </div>
+          <div class="pdp-info">
+            <span class="tag">${esc(p.cat || "")}</span><h1>${esc(p.name)}</h1>
+            <p class="price big">${price(p)}</p>
+            ${p.size ? `<p class="muted">Size: ${esc(p.size)} inches</p>` : ""}
+            <p>${esc(descFor(p))}</p>
+            ${custom ? `<div class="custom card">
+              <h3>Customize it</h3>
+              ${p.custom === "photo" || p.custom === "both" ? `<div class="field"><label for="ph">Upload a photo</label><input type="file" id="ph" accept="image/*"><span class="warn" id="pw"></span></div>` : ""}
+              ${p.custom === "text" || p.custom === "both" ? `<div class="field"><label for="tx">Name or short text</label><input id="tx" maxlength="30" placeholder="e.g. Ayesha"></div>` : ""}
+              <p class="eyebrow" style="margin:6px 0">Your preview</p>
+              <canvas id="cv" width="800" height="800" aria-label="Preview of your customized ${esc(p.name)}"></canvas>
+              <p class="muted" style="font-size:.82rem;margin-top:6px">Preview only. The Gift Haveli mark is not printed on your gift.</p></div>` : ""}
+            <div class="actions" style="margin-top:16px"><button class="btn" id="addP">Add to basket</button>
+              <a class="btn ghost" target="_blank" rel="noopener" id="waP" href="${askWa(`Assalam o Alaikum, I want to order ${p.name} (${p.id}).`)}">Order on WhatsApp</a></div>
+            <ul class="perks"><li>Delivery all over Pakistan</li><li>Overseas orders welcome</li><li>Preview before you order</li></ul>
+          </div></div>
+        ${related(p)}
+      </div></section>`;
+    },
+
+    "/ready": (q, rest) => {
+      const r = readyList().find(x => slug(x.name) === rest[0]);
+      if (!r) return ready ? notFound() : `<section class="page-head"><div class="wrap">${loading()}</div></section>`;
+      const box = byId(r.box), parts = rParts(r), url = rUrl(r), t = rTotal(r);
+      meta(`${r.name} Gift Box — Ready-Made Gift | Gift Haveli Pakistan`, (r.desc || `${r.name} gift box with ${parts.map(x => x.name).join(", ")}.`).slice(0, 155), url,
+        { "@context": "https://schema.org", "@graph": [{ "@type": "Product", name: r.name + " Gift Box", sku: r.id, description: r.desc, brand: { "@type": "Brand", name: "Gift Haveli" }, image: (r.gallery || []).map(g => SITE + src(g)) }, crumbs([["Home", "/"], ["Ready-made boxes", "/"], [r.name, url]])] }, r.gallery && r.gallery[0] ? src(r.gallery[0]) : "");
+      const g = r.gallery || [];
+      return `<section class="pdp"><div class="wrap"><nav class="crumbs"><a href="/">Home</a> / Ready-made boxes</nav>
+        <div class="pdp-grid">
+          <div class="gal"><div class="gal-main">${g.length ? `<img id="galMain" src="${src(g[0], 1200)}" alt="${esc(r.name)} gift box with items inside">` : boxSvg(box, r.items)}</div>
+            <div class="gal-thumbs">${g.map((x, i) => `<button class="${i ? "" : "on"}" data-g="${esc(src(x, 1200))}"><img src="${src(x, 300)}" alt="" loading="lazy"></button>`).join("")}</div></div>
+          <div class="pdp-info"><span class="tag">Ready-made box</span><h1>${esc(r.name)}</h1><p class="price big">${t ? rs(t) : "Rs 0000"}</p>
+            <p>${esc(r.desc || "")}</p>
+            <h3 style="margin-top:18px">What's inside</h3>
+            <div class="inside">${[box, ...parts].map(x => `<a href="${pUrl(x)}">${pic(x, x.icon || catIcon(x.cat))}<span>${esc(x.name)}</span></a>`).join("")}</div>
+            <div class="field" style="margin-top:14px"><label for="rbText">Message for the card (optional)</label><input id="rbText" maxlength="60" placeholder="e.g. Happy Birthday Ammi"></div>
+            <div class="actions"><button class="btn" id="addR" data-r="${esc(r.id)}">Add to basket</button><a class="btn ghost" href="/box/${pslug(box)}?from=${esc(r.id)}">Change items</a></div>
+          </div></div></div></section>`;
+    },
+
+    "/build": (q, rest) => {
+      if (!rest[0]) {
+        meta("Build Your Own Gift Box — Customized Gift Boxes in Pakistan | Gift Haveli", "Pick a gift box, fill it with chocolates, flowers, perfumes and customized items, add a message, and we deliver all over Pakistan.", "/build",
+          { "@context": "https://schema.org", "@graph": [crumbs([["Home", "/"], ["Build a box", "/build"]])] });
+        return `<section class="page-head"><div class="wrap"><p class="eyebrow">Build a box · Step 1</p><h1>Choose your box</h1><p class="muted">Pick a box. Next, you fill it with the things they love.</p></div></section>
+        <section style="padding-bottom:70px"><div class="wrap"><div class="grid prods">${D.boxes.length ? D.boxes.map(b => `<a class="prod" href="${bUrl(b)}"><div class="ph">${pic(b, "box")}</div><div class="in"><span class="tag">${esc(b.size ? b.size + " in" : "Gift box")} · up to ${b.slots} items</span><h3>${esc(b.name)}</h3><span class="price">${price(b)}</span><span class="btn sm" style="margin-top:auto">Choose this box</span></div></a>`).join("") : loading()}</div></div></section>`;
+      }
+      const box = D.boxes.find(b => pslug(b) === rest[0]);
+      if (!box) return ready ? notFound() : `<section class="page-head"><div class="wrap">${loading()}</div></section>`;
+      meta(`${box.name} — Build Your Gift Box | Gift Haveli`, `Fill the ${box.name} with chocolates, flowers, perfumes and customized gifts. Delivery all over Pakistan.`, bUrl(box),
+        { "@context": "https://schema.org", "@graph": [crumbs([["Home", "/"], ["Build a box", "/build"], [box.name, bUrl(box)]])] });
+      return `<section class="page-head" style="padding-bottom:6px"><div class="wrap"><nav class="crumbs"><a href="/build">Build a box</a> / Step 2</nav><h1>Fill your ${esc(box.name)}</h1></div></section>
+      <section style="padding-bottom:70px"><div class="wrap bb">
+        <div class="stage" id="stage"></div>
+        <div class="bb-cats" id="bbCats"><p class="eyebrow">Categories</p>${boxCats().map((c, i) => `<button class="bb-cat${i ? "" : " on"}" data-cat="${esc(c)}">${icon(catIcon(c) === "box" ? ({ Eatables: "star", Flowers: "flower", Perfumes: "lamp", "Customized Items": "frame", "Extras": "balloon" })[c] || "box" : catIcon(c))}<span>${esc(c)}</span></button>`).join("")}</div>
+        <div class="bb-items" id="bbItems"></div>
+        <div class="bb-foot"><div class="field"><label for="boxText">Name or message for the box (optional)</label><input id="boxText" maxlength="40" placeholder="e.g. Happy Birthday Ammi"></div>
+          <button class="btn" id="addBox">Add box to basket</button></div>
+      </div></section>`;
+    },
+
+    "/finder": () => {
+      meta("Gift Finder — Gift Ideas for Every Occasion | Gift Haveli", "Not sure what to gift? Pick the occasion, who it is for and your budget, and get customized gift ideas. Delivery all over Pakistan.", "/finder");
+      return `<section class="page-head"><div class="wrap"><p class="eyebrow">Gift Finder</p><h1>Find the right gift</h1><p class="muted">Answer three quick questions.</p></div></section>
       <section style="padding-bottom:70px"><div class="wrap two grid">
         <form class="card" id="finder">
           <div class="field"><label>Occasion</label><div class="chips" data-g="occ">${["Birthday", "Anniversary", "Eid", "Nikkah / Wedding", "Thank you", "Just because"].map(x => `<button type="button" class="chip">${x}</button>`).join("")}</div></div>
           <div class="field"><label>Who is it for?</label><div class="chips" data-g="rel">${["Wife", "Husband", "Mother", "Father", "Sister", "Brother", "Friend", "Child", "Boss / Client"].map(x => `<button type="button" class="chip">${x}</button>`).join("")}</div></div>
-          <div class="field"><label>Budget</label><select id="budget"><option value="2000">Up to Rs 2,000</option><option value="4000">Rs 2,000 – 4,000</option><option value="8000" selected>Rs 4,000 – 8,000</option><option value="99999">Above Rs 8,000</option></select></div>
-          <div class="field"><label>Tell us more (optional)</label><textarea id="idea" rows="3" placeholder="She loves roses and coffee…"></textarea></div>
+          <div class="field"><label for="budget">Budget</label><select id="budget"><option value="2000">Up to Rs 2,000</option><option value="4000">Rs 2,000 – 4,000</option><option value="8000" selected>Rs 4,000 – 8,000</option><option value="99999">Above Rs 8,000</option></select></div>
           <button class="btn">Show gift ideas</button>
-
         </form>
-        <div id="ideas"></div></div></section>`,
+        <div id="ideas"></div></div></section>`;
+    },
 
     "/cart": () => {
-      const c = store.get(), sub = c.reduce((s, i) => s + i.price, 0), del = !c.length || (D.freeAbove && sub >= D.freeAbove) ? 0 : D.delivery;
+      meta("Your Basket | Gift Haveli", "Your Gift Haveli basket.", "/cart");
+      const c = store.get(), sub = c.reduce((s, i) => s + (i.price || 0), 0), tbc = c.some(i => !i.price), del = !c.length || (D.freeAbove && sub >= D.freeAbove) ? 0 : D.delivery;
       return `<section class="page-head"><div class="wrap"><p class="eyebrow">Your basket</p><h1>Almost there</h1></div></section>
       <section style="padding-bottom:70px"><div class="wrap grid two">
-        <div>${c.length ? c.map((i, n) => `<div class="line"><div><b>${esc(i.name)}</b><br><small class="muted">${esc(i.detail || "")}${i.hasPhoto && !photos[i.uid] ? ` <span class="warn">Photo lost after page reload — remove and add again.</span>` : ""}</small></div><div>${rs(i.price)} <button class="btn sm ghost" data-del="${n}">Remove</button></div></div>`).join("") : `<p class="muted">Your basket is empty. <a href="#/customize">Find a gift</a>.</p>`}
+        <div>${c.length ? c.map((i, n) => `<div class="line"><div><b>${esc(i.name)}</b><br><small class="muted">${esc(i.detail || "")}${i.hasPhoto && !photos[i.uid] ? ` <span class="warn">Photo lost after page reload — remove and add again.</span>` : ""}</small></div><div>${i.price ? rs(i.price) : "Rs 0000"} <button class="btn sm ghost" data-del="${n}">Remove</button></div></div>`).join("") : `<p class="muted">Your basket is empty. <a href="/customize">Find a gift</a>.</p>`}
           ${c.length ? `<form id="order" class="card" style="margin-top:26px">
             <h3>Sender</h3>
             <div class="field"><label>Your name</label><input name="senderName" required></div>
@@ -131,151 +268,185 @@
             <input name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
             <button class="btn" id="placeBtn" style="margin-top:16px">Place order</button><p class="warn" id="orderErr"></p></form>` : ""}
         </div>
-        <aside class="sum"><div class="row"><span>Items</span><span>${rs(sub)}</span></div>
+        <aside class="sum"><div class="row"><span>Items</span><span>${tbc ? (sub ? rs(sub) + " + to confirm" : "To confirm") : rs(sub)}</span></div>
           <div class="row"><span>Delivery</span><span>${del ? rs(del) : (c.length ? "Free" : "—")}</span></div>
-          <hr style="border:0;border-top:1px solid rgba(106,27,46,.15)"><div class="row"><span>Total</span><span class="grand">${rs(sub + del)}</span></div>
-          ${D.freeAbove && sub && sub < D.freeAbove ? `<p class="muted" style="font-size:.85rem">Add ${rs(D.freeAbove - sub)} more for free delivery.</p>` : ""}</aside>
+          <hr style="border:0;border-top:1px solid rgba(106,27,46,.15)"><div class="row"><span>Total</span><span class="grand">${tbc ? "To confirm" : rs(sub + del)}</span></div>
+          ${tbc ? `<p class="muted" style="font-size:.85rem">Some prices will be confirmed on WhatsApp after you place the order.</p>` : ""}</aside>
       </div></section>`;
     },
 
-    "/thanks": q => `<section class="block"><div class="wrap" style="text-align:center;max-width:640px">
+    "/thanks": q => { meta("Thank you | Gift Haveli", "Order received.", "/thanks");
+      return `<section class="block"><div class="wrap" style="text-align:center;max-width:640px">
       <p class="eyebrow">Order received</p><h1>Thank you!</h1><p>Your Order ID is</p><h2>${esc(q.get("id"))}</h2>
       <p class="muted">We're opening WhatsApp so you can send us your order. Keep this ID to track your gift.</p>
-      <a class="btn" href="${esc(lastWa || ("https://wa.me/" + D.whatsapp))}" target="_blank" rel="noopener">Open WhatsApp</a></div></section>`,
+      <a class="btn" href="${esc(lastWa || ("https://wa.me/" + D.whatsapp))}" target="_blank" rel="noopener">Open WhatsApp</a></div></section>`; },
 
-    "/track": () => `<section class="page-head"><div class="wrap"><p class="eyebrow">Track order</p><h1>Where is my gift?</h1></div></section>
+    "/track": () => { meta("Track Your Order | Gift Haveli", "Track your Gift Haveli order with your Order ID.", "/track");
+      return `<section class="page-head"><div class="wrap"><p class="eyebrow">Track order</p><h1>Where is my gift?</h1></div></section>
       <section style="padding-bottom:80px"><div class="wrap" style="max-width:560px"><form class="card" id="track">
-      <div class="field"><label>Order ID</label><input id="tid" placeholder="GH-2611-0001" required></div>
-      <div class="field"><label>Last 4 digits of your WhatsApp number</label><input id="tph" inputmode="numeric" maxlength="4" required></div><button class="btn">Check status</button><div id="tres" style="margin-top:18px"></div></form></div></section>`,
+      <div class="field"><label for="tid">Order ID</label><input id="tid" placeholder="GH-2611-0001" required></div>
+      <div class="field"><label for="tph">Last 4 digits of your WhatsApp number</label><input id="tph" inputmode="numeric" maxlength="4" required></div><button class="btn">Check status</button><div id="tres" style="margin-top:18px"></div></form></div></section>`; },
 
-    "/corporate": () => `<section class="page-head"><div class="wrap"><p class="eyebrow">Corporate gifting</p><h1>Gifts your team and clients remember</h1></div></section>
-      <section style="padding-bottom:80px"><div class="wrap split"><img src="hero-hamper.jpg" alt="Premium cream gift hamper with gold ribbon" style="aspect-ratio:4/3">
+    "/corporate": () => { meta("Corporate Gifts in Pakistan — Eid Hampers, Branded Mugs & Awards | Gift Haveli", "Corporate and bulk gifts: Eid hampers for staff, client gifts with your logo, shields and awards. Delivered to many addresses across Pakistan.", "/corporate");
+      return `<section class="page-head"><div class="wrap"><p class="eyebrow">Corporate gifting</p><h1>Gifts your team and clients remember</h1></div></section>
+      <section style="padding-bottom:80px"><div class="wrap split"><img src="/hero-hamper.jpg" alt="Premium cream gift hamper with gold ribbon" style="aspect-ratio:4/3">
       <div><ul class="steps"><li>Eid and festive hampers for staff</li><li>Client gifts with your logo on mugs, pens and boxes</li><li>Wooden shields and awards</li><li>Delivery to many addresses across Pakistan</li></ul>
-      <a class="btn" href="https://wa.me/${D.whatsapp}?text=${encodeURIComponent("Assalam o Alaikum, I want to discuss corporate / bulk gifts.")}" target="_blank" rel="noopener">Talk to us on WhatsApp</a></div></div></section>`,
+      <a class="btn" href="${askWa("Assalam o Alaikum, I want to discuss corporate / bulk gifts.")}" target="_blank" rel="noopener">Talk to us on WhatsApp</a></div></div></section>`; },
 
-    "/faq": () => `<section class="page-head"><div class="wrap"><p class="eyebrow">Questions</p><h1>Good to know</h1></div></section>
-      <section style="padding-bottom:80px"><div class="wrap" style="max-width:760px">${[
-        ["Where do you deliver?", "All over Pakistan."],
-        ["How much is delivery?", freeLine()],
-        ["I live abroad. Can I order?", "Yes. Order here and we deliver to your family in Pakistan."],
-        ["Are the flowers real?", "We use high-quality artificial flowers, so they stay beautiful."],
-        ["How do I add a photo?", "Choose a product, tap Personalise and upload your photo. You'll see a preview first."]
-      ].map(([q, a]) => `<details class="card" style="margin-bottom:12px"><summary><b>${q}</b></summary><p style="margin-top:10px">${a}</p></details>`).join("")}</div></section>`
+    "/faq": () => {
+      const qa = [["Where do you deliver?", "All over Pakistan."], ["How much is delivery?", freeLine()], ["I live abroad. Can I order?", "Yes. Order here and we deliver to your family in Pakistan."],
+        ["Are the flowers real?", "We use high-quality artificial flowers, so they stay beautiful."], ["How do I add a photo?", "Open a product, upload your photo in the Customize box and see your preview before you add it to the basket."]];
+      meta("Questions — Delivery, Overseas Orders & Customization | Gift Haveli", "Answers about delivery across Pakistan, ordering from abroad, artificial flowers and adding your photo to a gift.", "/faq",
+        { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: qa.map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) });
+      return `<section class="page-head"><div class="wrap"><p class="eyebrow">Questions</p><h1>Good to know</h1></div></section>
+      <section style="padding-bottom:80px"><div class="wrap" style="max-width:760px">${qa.map(([q, a]) => `<details class="card" style="margin-bottom:12px"><summary><b>${q}</b></summary><p style="margin-top:10px">${a}</p></details>`).join("")}</div></section>`;
+    }
   };
+  pages["/category"] = pages["/customize"]; pages["/box"] = (q, rest) => rest[0] ? pages["/build"](q, rest) : notFound();
+  const notFound = () => { meta("Page not found | Gift Haveli", "This page could not be found.", location.pathname); return `<section class="block"><div class="wrap" style="text-align:center"><h1>We couldn't find that page</h1><p class="muted">It may have moved.</p><a class="btn" href="/">Go to home</a></div></section>`; };
+  const related = p => { const r = D.products.filter(x => x.cat === p.cat && x.id !== p.id).slice(0, 4);
+    return r.length ? `<div style="margin-top:56px"><h2>More ${esc(p.cat || "gifts")}</h2><div class="grid prods" style="margin-top:18px">${r.map(x => card(x)).join("")}</div></div>` : ""; };
+  const boxCats = () => [...new Set([...D.fillers.map(f => f.cat || "Other"), ...(D.addons.length ? ["Extras"] : [])])];
 
-  /* ---------- router ---------- */
-  function route() {
-    const [path, qs] = (location.hash.slice(1) || "/").split("?");
-    const q = new URLSearchParams(qs || "");
-    app.innerHTML = (pages[path] || pages["/"])(q);
-    document.querySelectorAll(".links a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + path));
+  /* ---------- router (clean URLs) ---------- */
+  function route(push) {
+    let path = location.pathname.replace(/\/index\.html$/, "/").replace(/\.html$/, "").replace(/\/+$/, "") || "/";
+    const q = new URLSearchParams(location.search), parts = path.split("/").filter(Boolean);
+    const key = parts.length ? "/" + parts[0] : "/", rest = parts.slice(1);
+    app.innerHTML = (pages[key] || notFound)(q, rest);
+    document.querySelectorAll(".links a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === key || (key === "/category" && a.getAttribute("href") === "/customize") || (key === "/box" && a.getAttribute("href") === "/build")));
     $("#links").classList.remove("open");
-    window.scrollTo(0, 0);
-    if (path === "/build") initBuilder();
+    if (push !== false) window.scrollTo(0, 0);
+    if (key === "/box" && rest[0]) initBuilder(q.get("from"));
+    if (key === "/product") initProduct(rest[0]);
     bind();
   }
+  // in-site links change the page without reloading
+  document.addEventListener("click", e => {
+    const a = e.target.closest("a"); if (!a || a.target || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    const href = a.getAttribute("href"); if (!href || !href.startsWith("/") || href.startsWith("//") || /\.(pdf|jpg|png|xml|txt)$/.test(href)) return;
+    e.preventDefault(); history.pushState(null, "", href); route();
+  });
+  window.addEventListener("popstate", () => route(false));
+  const go = u => { history.pushState(null, "", u); route(); };
 
-  /* ---------- personalise modal with live canvas preview + watermark ---------- */
-  function openProduct(p) {
-    const m = document.createElement("div");
-    m.className = "modal";
-    m.innerHTML = `<div class="sheet"><div class="left"><canvas id="cv" width="800" height="800"></canvas></div>
-      <div class="right"><button class="x" aria-label="Close">×</button><p class="tag">${p.id}</p><h2>${esc(p.name)}</h2><p class="price">${price(p)}</p>
-      ${p.custom === "photo" || p.custom === "both" ? `<div class="field"><label>Upload a photo</label><input type="file" id="ph" accept="image/*"><span class="warn" id="pw"></span></div>` : ""}
-      ${p.custom === "text" || p.custom === "both" ? `<div class="field"><label>Name or short text</label><input id="tx" maxlength="30" placeholder="e.g. Ayesha"></div>` : ""}
-      <p class="muted" style="font-size:.85rem">Preview only. The Gift Haveli mark is not printed on your gift.</p>
-      <button class="btn" id="add">Add to basket</button></div></div>`;
-    document.body.appendChild(m);
-    const cv = $("#cv", m), ctx = cv.getContext("2d");
-    let img = null, photo = null;
-    const draw = () => {
-      ctx.fillStyle = "#f6ecdd"; ctx.fillRect(0, 0, 800, 800);
-      // product mock: mug-like printable area
-      ctx.fillStyle = "#fff"; ctx.strokeStyle = "#d9c4a5"; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.roundRect(170, 170, 420, 460, 30); ctx.fill(); ctx.stroke();
-      if (catIcon(p.cat) === "mug") { ctx.beginPath(); ctx.lineWidth = 34; ctx.strokeStyle = "#fff"; ctx.arc(600, 400, 90, -1.2, 1.2); ctx.stroke(); ctx.lineWidth = 4; ctx.strokeStyle = "#d9c4a5"; }
-      if (img) { ctx.save(); ctx.beginPath(); ctx.roundRect(200, 200, 360, 300, 16); ctx.clip();
-        const s = Math.max(360 / img.width, 300 / img.height); ctx.drawImage(img, 380 - img.width * s / 2, 350 - img.height * s / 2, img.width * s, img.height * s); ctx.restore(); }
-      const t = ($("#tx", m) || {}).value || "";
-      ctx.fillStyle = "#6A1B2E"; ctx.textAlign = "center"; ctx.font = "italic 600 46px Fraunces, serif";
-      ctx.fillText(t || (img ? "" : "Your name here"), 380, img ? 570 : 420);
-      // watermark (preview only)
-      ctx.save(); ctx.translate(400, 400); ctx.rotate(-0.5); ctx.globalAlpha = 0.16; ctx.fillStyle = "#6A1B2E"; ctx.font = "600 40px DM Sans, sans-serif";
-      for (let y = -500; y < 500; y += 120) ctx.fillText("GIFT HAVELI  ·  PREVIEW  ·  GIFT HAVELI", 0, y);
-      ctx.restore();
-    };
-    draw();
-    m.addEventListener("input", draw);
-    const ph = $("#ph", m);
-    if (ph) ph.addEventListener("change", e => {
+  /* ---------- product page: gallery + live preview ---------- */
+  function initProduct(s) {
+    const p = all().find(x => pslug(x) === s); if (!p) return;
+    document.querySelectorAll(".gal-thumbs button").forEach(b => b.onclick = () => { $("#galMain").src = b.dataset.g; document.querySelectorAll(".gal-thumbs button").forEach(x => x.classList.toggle("on", x === b)); });
+    const cv = $("#cv"); let img = null, photo = null;
+    const getT = () => (($("#tx") || {}).value || "").trim();
+    const draw = () => cv && drawMock(cv, p, img, getT());
+    if (cv) { draw(); document.fonts && document.fonts.ready.then(draw); }
+    const tx = $("#tx"); if (tx) tx.oninput = () => { draw(); waLink(); };
+    const ph = $("#ph");
+    if (ph) ph.onchange = e => {
       const f = e.target.files[0]; if (!f) return;
       const r = new FileReader();
-      r.onload = () => { const i = new Image(); i.onload = () => { img = i; photo = shrink(i); $("#pw", m).textContent = (i.width < 800 || i.height < 800) ? "This photo is small and may print blurry. A bigger photo will look better." : ""; draw(); }; i.src = r.result; };
+      r.onload = () => { const i = new Image(); i.onload = () => { img = i; photo = shrink(i); $("#pw").textContent = (i.width < 800 || i.height < 800) ? "This photo is small and may print blurry. A bigger photo will look better." : ""; draw(); }; i.src = r.result; };
       r.readAsDataURL(f);
-    });
-    m.addEventListener("click", e => { if (e.target === m || e.target.classList.contains("x")) m.remove(); });
-    $("#add", m).onclick = () => {
-      const t = ($("#tx", m) || {}).value || "";
-      if ((p.custom === "photo") && !photo) return toast("Please upload a photo first");
-      addCart({ type: "product", id: p.id, name: p.name, price: p.price, text: t, detail: [t && `Text: ${t}`, photo && "Photo added"].filter(Boolean).join(" · ") }, photo);
-      m.remove();
+    };
+    const waLink = () => { const w = $("#waP"); if (w) w.href = askWa(`Assalam o Alaikum, I want to order ${p.name} (${p.id}).${getT() ? `\nText: ${getT()}` : ""}${photo ? "\nI will send my photo here." : ""}`); };
+    $("#addP").onclick = () => {
+      const t = getT();
+      if (p.custom === "photo" && !photo) return toast("Please upload a photo first");
+      if (p.custom === "text" && !t) return toast("Please type the name or text first");
+      const type = D.products.includes(p) ? "product" : "item";
+      addCart({ type, id: p.id, name: p.name, price: p.price, text: t, detail: [t && `Text: ${t}`, photo && "Photo added"].filter(Boolean).join(" · ") }, photo);
     };
   }
 
-  /* ---------- ready-made gifts (home) ---------- */
-  function readyGifts() {
-    const boxes = readyList().map(r => {
-      const box = D.boxes.find(b => b.id === r.box), parts = r.items.map(id => D.fillers.find(f => f.id === id));
-      const all = [box, ...parts], priced = all.every(x => x.price), total = all.reduce((s, x) => s + x.price, 0);
-      const msg = [`Assalam o Alaikum, I want to order the ready-made "${r.name}" gift box:`, `Box: ${box.name} (${box.id})`, ...parts.map(f => `• ${f.name}`)].join("\n");
-      return `<article class="prod"><div class="ph">${pic(box.id, "box", r.name)}</div><div class="in">
-        <span class="tag">Ready-made box</span><h3>${esc(r.name)}</h3><p class="muted" style="font-size:.9rem;margin:0">${esc(parts.map(f => f.name).join(", "))}</p>
-        <span class="price">${priced ? rs(total) : "Rs 0000"}</span>
-        ${priced ? `<button class="btn sm" data-rb="${r.i}" style="margin-top:auto">Add to basket</button>` : `<a class="btn sm" style="margin-top:auto" target="_blank" rel="noopener" href="${askWa(msg)}">Order on WhatsApp</a>`}</div></article>`;
-    });
-    const prods = D.products.filter(p => /hamper|box|bouquet|basket/i.test(p.cat)).map(p => `
-      <article class="prod"><div class="ph">${pic(p.id, catIcon(p.cat), p.name)}</div><div class="in">
-        <span class="tag">${esc(p.cat)}</span><h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>
-        ${p.price ? `<button class="btn sm" data-p="${p.id}" style="margin-top:auto">${p.custom === "none" ? "Add to basket" : "Personalise"}</button>`
-          : `<a class="btn sm" style="margin-top:auto" target="_blank" rel="noopener" href="${askWa(`Assalam o Alaikum, I want to order ${p.name} (${p.id}).`)}">Order on WhatsApp</a>`}</div></article>`);
-    return [...boxes, ...prods].join("");
+  /* product mock-ups for the preview (drawn, so every product gets one) */
+  function drawMock(cv, p, img, t) {
+    const x = cv.getContext("2d"), W = 800, kind = mockKind(p);
+    x.clearRect(0, 0, W, W); const g = x.createRadialGradient(400, 360, 50, 400, 400, 560); g.addColorStop(0, "#fbf4e8"); g.addColorStop(1, "#ecdcc4"); x.fillStyle = g; x.fillRect(0, 0, W, W);
+    const fit = (X, Y, w, h, r) => { x.save(); x.beginPath(); x.roundRect(X, Y, w, h, r || 0); x.clip();
+      if (img) { const s = Math.max(w / img.width, h / img.height); x.drawImage(img, X + w / 2 - img.width * s / 2, Y + h / 2 - img.height * s / 2, img.width * s, img.height * s); }
+      else { x.fillStyle = "#f3e6d3"; x.fillRect(X, Y, w, h); x.fillStyle = "#b69a6b"; x.font = "500 26px 'DM Sans'"; x.textAlign = "center"; x.fillText(p.custom === "text" ? "" : "Your photo", X + w / 2, Y + h / 2 + 8); }
+      x.restore(); };
+    const text = (s, X, Y, size, col, font) => { if (!s) return; x.fillStyle = col || "#6A1B2E"; x.textAlign = "center"; x.font = font || `italic 600 ${size}px Fraunces, serif`; x.fillText(s, X, Y); };
+    const T = t || (p.custom === "photo" ? "" : "Your name");
+    const shadow = () => { x.shadowColor = "rgba(43,15,23,.25)"; x.shadowBlur = 30; x.shadowOffsetY = 14; }, noShadow = () => { x.shadowColor = "transparent"; x.shadowBlur = 0; x.shadowOffsetY = 0; };
+    if (kind === "mug") {
+      shadow(); x.fillStyle = "#fff"; x.beginPath(); x.roundRect(190, 190, 380, 440, 26); x.fill(); noShadow();
+      x.lineWidth = 40; x.strokeStyle = "#fff"; x.beginPath(); x.arc(580, 400, 100, -1.1, 1.1); x.stroke(); x.lineWidth = 3; x.strokeStyle = "#e4d5bd"; x.beginPath(); x.roundRect(190, 190, 380, 440, 26); x.stroke();
+      if (p.custom !== "text") fit(225, 235, 310, 260, 14); text(T, 380, img || p.custom !== "text" ? 570 : 430, 46);
+    } else if (kind === "cushion") {
+      shadow(); x.fillStyle = "#fff"; x.beginPath(); x.moveTo(150, 170); x.quadraticCurveTo(400, 130, 650, 170); x.quadraticCurveTo(690, 400, 650, 630); x.quadraticCurveTo(400, 670, 150, 630); x.quadraticCurveTo(110, 400, 150, 170); x.fill(); noShadow();
+      if (p.custom !== "text") fit(215, 215, 370, 300, 30); text(T, 400, img || p.custom !== "text" ? 585 : 420, 50);
+    } else if (kind === "clock") {
+      shadow(); x.fillStyle = "#2b2b2b"; x.beginPath(); x.arc(400, 400, 290, 0, 7); x.fill(); noShadow();
+      x.save(); x.beginPath(); x.arc(400, 400, 265, 0, 7); x.clip(); fit(135, 135, 530, 530); x.restore();
+      x.strokeStyle = "#fff"; x.lineWidth = 10; x.lineCap = "round"; x.beginPath(); x.moveTo(400, 400); x.lineTo(400, 250); x.moveTo(400, 400); x.lineTo(500, 450); x.stroke();
+      text(T, 400, 600, 40, "#fff");
+    } else if (kind === "lamp") {
+      x.fillStyle = "#7a4f2c"; x.beginPath(); x.roundRect(220, 610, 360, 70, 12); x.fill();
+      x.save(); x.shadowColor = "rgba(255,214,140,.9)"; x.shadowBlur = 60; x.fillStyle = "rgba(255,255,255,.55)"; x.beginPath(); x.roundRect(250, 150, 300, 470, 16); x.fill(); x.restore();
+      x.globalAlpha = .9; fit(270, 175, 260, 300, 10); x.globalAlpha = 1; text(T, 400, 550, 40);
+    } else if (kind === "shirt") {
+      shadow(); x.fillStyle = "#fff"; x.beginPath(); x.moveTo(300, 140); x.lineTo(180, 200); x.lineTo(130, 330); x.lineTo(220, 360); x.lineTo(240, 300); x.lineTo(240, 690); x.lineTo(560, 690); x.lineTo(560, 300); x.lineTo(580, 360); x.lineTo(670, 330); x.lineTo(620, 200); x.lineTo(500, 140); x.quadraticCurveTo(400, 210, 300, 140); x.fill(); noShadow();
+      if (p.custom !== "text") fit(300, 260, 200, 220, 8); text(T, 400, p.custom !== "text" ? 540 : 420, 40);
+    } else if (kind === "engrave") {
+      shadow(); const gg = x.createLinearGradient(200, 300, 600, 500); gg.addColorStop(0, "#e9cf8a"); gg.addColorStop(.5, "#c9a24b"); gg.addColorStop(1, "#a9822f");
+      x.fillStyle = gg; x.beginPath(); x.roundRect(170, 330, 460, 150, 75); x.fill(); noShadow();
+      if (img) { x.save(); x.beginPath(); x.arc(250, 405, 58, 0, 7); x.clip(); fit(192, 347, 116, 116); x.restore(); }
+      text(T, img ? 440 : 400, 425, 52, "#5a3d10");
+    } else if (kind === "neon") {
+      x.fillStyle = "#1d1014"; x.fillRect(0, 0, W, W); x.save(); x.shadowColor = "#ff6ec7"; x.shadowBlur = 40; text(T, 400, 430, 110, "#ffd6f0"); x.restore();
+    } else if (kind === "bouquet") {
+      x.fillStyle = "#6A1B2E"; x.beginPath(); x.moveTo(250, 180); x.lineTo(550, 180); x.lineTo(430, 650); x.lineTo(370, 650); x.closePath(); x.fill();
+      for (let i = 0; i < 9; i++) { x.fillStyle = i % 2 ? "#a3172f" : "#7a3b16"; x.beginPath(); x.arc(290 + (i % 5) * 55, 190 + Math.floor(i / 5) * 55, 38, 0, 7); x.fill(); }
+      x.fillStyle = "#FAF3E7"; x.beginPath(); x.roundRect(280, 420, 240, 90, 10); x.fill(); text(T, 400, 478, 34);
+    } else if (kind === "box") {
+      shadow(); x.fillStyle = "#6A1B2E"; x.beginPath(); x.roundRect(150, 180, 500, 450, 18); x.fill(); noShadow();
+      x.fillStyle = "#C9A24B"; x.fillRect(385, 180, 30, 450); if (p.custom !== "text") fit(210, 240, 380, 260, 12); text(T, 400, 580, 44, "#FAF3E7");
+    } else { // frame and other flat prints
+      shadow(); x.fillStyle = "#2b1a14"; x.fillRect(180, 120, 440, 560); noShadow(); x.fillStyle = "#fff"; x.fillRect(205, 145, 390, 510);
+      if (p.custom !== "text") fit(230, 170, 340, 380); text(T, 400, p.custom !== "text" ? 615 : 420, 40);
+    }
+    // watermark (preview only)
+    x.save(); x.translate(400, 400); x.rotate(-0.5); x.globalAlpha = 0.14; x.fillStyle = "#6A1B2E"; x.textAlign = "center"; x.font = "600 34px 'DM Sans', sans-serif";
+    for (let y = -560; y < 560; y += 110) x.fillText("GIFT HAVELI  ·  PREVIEW  ·  GIFT HAVELI  ·  PREVIEW", 0, y);
+    x.restore();
   }
+  const mockKind = p => {
+    const n = (p.name + " " + p.cat).toLowerCase();
+    if (/mug/.test(n)) return "mug"; if (/cushion/.test(n)) return "cushion"; if (/clock/.test(n)) return "clock"; if (/neon/.test(n)) return "neon";
+    if (/lamp/.test(n)) return "lamp"; if (/shirt|cap|hood|apparel/.test(n)) return "shirt"; if (/bouquet/.test(n)) return "bouquet";
+    if (/jewel|locket|ring|bracelet|pendant|pen|wallet|watch|keychain|brooch|case|men/.test(n)) return "engrave";
+    if (/box|hamper|jar/.test(n)) return "box"; return "frame";
+  };
 
-  /* ---------- box builder ---------- */
-  let B = { box: null, items: [], addons: [] };
-  function initBuilder() { if (!D.boxes.length || !D.fillers.length) return; B = { box: D.boxes[0].id, items: [], addons: [] }; renderStage(); }
-  function readyList() { return D.readyBoxes.map((r, i) => ({ ...r, i })).filter(r => D.boxes.some(b => b.id === r.box) && r.items.every(id => D.fillers.some(f => f.id === id))); }
-  const boxColor = n => /red/i.test(n) ? "#8E1F35" : /white/i.test(n) ? "#F3E6D3" : /black/i.test(n) ? "#2B0F17" : /gold/i.test(n) ? "#B8913F" : /blue/i.test(n) ? "#2E4A7A" : "#6A1B2E";
+  /* ---------- box builder (box | categories | items) ---------- */
+  let B = { box: null, items: [], addons: [], cat: null };
+  function initBuilder(from) {
+    const box = D.boxes.find(b => pslug(b) === location.pathname.split("/").filter(Boolean)[1]); if (!box) return;
+    const r = from && readyList().find(x => x.id === from);
+    B = { box: box.id, items: r ? r.items.filter(id => D.fillers.some(f => f.id === id)).slice(0, box.slots) : [], addons: [], cat: boxCats()[0] };
+    renderItems(); renderStage();
+  }
+  function renderItems() {
+    const list = B.cat === "Extras" ? D.addons : D.fillers.filter(f => (f.cat || "Other") === B.cat);
+    $("#bbItems").innerHTML = `<p class="eyebrow">${esc(B.cat || "")}</p>` + (list.length ? list.map(f => { const on = (B.cat === "Extras" ? B.addons : B.items).includes(f.id);
+      return `<button class="bb-item${on ? " on" : ""}" data-it="${f.id}">${pic(f, f.icon)}<span><b>${esc(f.name)}</b><small>${price(f)}${f.custom && f.custom !== "none" ? " · " + customLabel(f.custom) : ""}</small></span><i>${on ? "✓" : "+"}</i></button>`; }).join("") : `<p class="muted">Nothing here yet.</p>`);
+    document.querySelectorAll("[data-it]").forEach(b => b.onclick = () => {
+      const id = b.dataset.it, box = byId(B.box);
+      if (B.cat === "Extras") B.addons = B.addons.includes(id) ? B.addons.filter(x => x !== id) : [...B.addons, id];
+      else if (B.items.includes(id)) B.items = B.items.filter(x => x !== id);
+      else if (B.items.length < box.slots) B.items.push(id); else return toast(`This box holds ${box.slots} items. Remove one, or choose a bigger box.`);
+      renderItems(); renderStage();
+    });
+  }
   function renderStage() {
-    const box = D.boxes.find(b => b.id === B.box);
-    const sub = box.price + B.items.reduce((s, id) => s + D.fillers.find(f => f.id === id).price, 0) + B.addons.reduce((s, id) => s + D.addons.find(a => a.id === id).price, 0);
-    const slots = B.items.map((id, i) => {
-      const f = D.fillers.find(x => x.id === id), col = i % 4, row = Math.floor(i / 4) % 2;
-      return `<g class="item-pop" transform="translate(${118 + col * 92} ${150 + row * 80})"><circle r="34" fill="#FAF3E7" stroke="#C9A24B" stroke-width="2"/><g transform="translate(-22 -22) scale(.7)" fill="none" stroke="#6A1B2E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${D.icons[f.icon] || D.icons.box}</g></g>`;
-    }).join("");
-    const shape = box.shape === "heart"
-      ? `<path d="M260 330 C120 250 90 140 170 105 C215 85 250 110 260 140 C270 110 305 85 350 105 C430 140 400 250 260 330Z" fill="${boxColor(box.name)}" stroke="#C9A24B" stroke-width="3"/>`
-      : `<rect x="70" y="${box.shape === "trunk" ? 100 : 90}" width="380" height="${box.shape === "trunk" ? 200 : 230}" rx="${box.shape === "trunk" ? 22 : 12}" fill="${boxColor(box.name)}" stroke="#C9A24B" stroke-width="3"/>`;
-    const has = re => B.addons.some(id => re.test((D.addons.find(a => a.id === id) || {}).name || ""));
-    const bow = has(/ribbon|bow/i) ? `<path d="M260 82 C230 50 200 70 220 92 Z M260 82 C290 50 320 70 300 92 Z" fill="#C9A24B"/><rect x="252" y="80" width="16" height="16" rx="4" fill="#C9A24B"/>` : "";
-    const balloons = has(/balloon/i) ? `<g opacity=".9"><ellipse cx="470" cy="70" rx="22" ry="28" fill="#C9A24B"/><ellipse cx="440" cy="50" rx="20" ry="26" fill="#E9C9C3"/><path d="M470 98 L455 200 M440 76 L455 200" stroke="#E7D2A0"/></g>` : "";
-    const lights = has(/light/i) ? Array.from({ length: 9 }, (_, i) => `<circle cx="${90 + i * 42}" cy="${340 + (i % 2) * 8}" r="5" fill="#FFE9A8"/>`).join("") : "";
-    const text = ($("#boxText") || {}).value || "";
-    $("#stage").innerHTML = `<svg viewBox="0 0 520 380">${balloons}${shape}${bow}${slots}${lights}
-      ${text ? `<text x="260" y="370" text-anchor="middle" font-family="Fraunces" font-style="italic" font-size="22" fill="#E7D2A0">${text.replace(/[<>&]/g, "")}</text>` : ""}</svg>
-      <div class="total"><span>${esc(box.name)} · ${B.items.length}/${box.slots} items</span><b>${rs(sub)}</b></div>`;
-    document.querySelectorAll("[data-b]").forEach(b => b.classList.toggle("on", b.dataset.b === B.box));
-    document.querySelectorAll("[data-a]").forEach(b => b.classList.toggle("on", B.addons.includes(b.dataset.a)));
-    document.querySelectorAll("[data-f]").forEach(b => b.classList.toggle("on", B.items.includes(b.dataset.f)));
-    B.total = sub;
-    const parts = [box, ...B.items.map(id => D.fillers.find(f => f.id === id)), ...B.addons.map(id => D.addons.find(a => a.id === id))];
-    B.unpriced = parts.some(x => !x.price);
-    if (B.unpriced) $("#stage .total b").textContent = "Rs 0000";
-    const ab = $("#addBox"); if (ab) ab.textContent = B.unpriced ? "Send this box on WhatsApp" : "Add box to basket";
+    const box = byId(B.box), parts = [box, ...B.items.map(byId), ...B.addons.map(byId)], priced = parts.every(x => x.price), sub = parts.reduce((s, x) => s + (x.price || 0), 0);
+    $("#stage").innerHTML = boxSvg(box, B.items, ($("#boxText") || {}).value || "") +
+      `<div class="total"><span>${esc(box.name)} · ${B.items.length}/${box.slots} items${B.addons.length ? ` + ${B.addons.length} extra` : ""}</span><b>${priced ? rs(sub) : "Rs 0000"}</b></div>
+      ${B.items.length ? `<div class="chips-in">${B.items.map(id => `<button data-rm="${id}">${esc(byId(id).name)} ×</button>`).join("")}</div>` : `<p class="muted-l" style="margin:8px 0 0">Pick a category, then tap items to put them in the box.</p>`}`;
+    document.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { B.items = B.items.filter(x => x !== b.dataset.rm); renderItems(); renderStage(); });
+    B.total = sub; B.priced = priced;
   }
 
   /* ---------- cart & order ---------- */
-  // shrink a photo to max 2000px JPEG so uploads stay small and fast
   function shrink(i) {
     const k = Math.min(1, 2000 / Math.max(i.width, i.height)), c = document.createElement("canvas");
     c.width = Math.round(i.width * k); c.height = Math.round(i.height * k);
@@ -289,20 +460,18 @@
   }
   let lastWa = "";
   async function placeOrder(form) {
-    const fd = Object.fromEntries(new FormData(form)), btn = $("#placeBtn"), err = $("#orderErr");
-    const c = store.get();
+    const fd = Object.fromEntries(new FormData(form)), btn = $("#placeBtn"), err = $("#orderErr"), c = store.get();
     if (c.some(i => i.hasPhoto && !photos[i.uid])) { err.textContent = "A photo was lost when the page reloaded. Please remove that item and add it again."; return; }
     btn.disabled = true; btn.textContent = "Placing your order…"; err.textContent = "";
     const body = { action: "order", website: fd.website || "", form: { ...fd, secret: !!fd.secret },
-      items: c.map(i => i.type === "box" ? { type: "box", box: i.box, items: i.items, addons: i.addons, text: i.text }
-        : { type: "product", id: i.id, text: i.text, photo: photos[i.uid] }) };
+      items: c.map(i => i.type === "box" ? { type: "box", box: i.box, items: i.items, addons: i.addons, text: i.text, ready: i.ready }
+        : { type: i.type || "product", id: i.id, text: i.text, photo: photos[i.uid] }) };
     try {
-      const r = await fetch(D.api, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) });
-      const j = await r.json();
+      const j = await (await fetch(D.api, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) })).json();
       if (!j.ok) throw new Error(j.error || "Order failed");
       lastWa = `https://wa.me/${j.whatsapp || D.whatsapp}?text=${encodeURIComponent(j.message)}`;
       store.set([]); Object.keys(photos).forEach(k => delete photos[k]);
-      location.hash = `#/thanks?id=${encodeURIComponent(j.id)}`;
+      go(`/thanks?id=${encodeURIComponent(j.id)}`);
       setTimeout(() => { location.href = lastWa; }, 1800);
     } catch (e) {
       err.textContent = (e && e.message && !/fetch|network|JSON/i.test(e.message)) ? e.message : "We couldn't reach our order system. Please try again, or message us on WhatsApp.";
@@ -310,24 +479,23 @@
     }
   }
 
-  /* ---------- gift finder (rule-based preview; AI in live site) ---------- */
+  /* ---------- gift finder ---------- */
   function finder(form) {
     const pick = g => [...form.querySelectorAll(`[data-g="${g}"] .chip.on`)].map(c => c.textContent);
     const occ = pick("occ")[0] || "", rel = pick("rel")[0] || "", budget = +$("#budget").value;
     const prefs = { Wife: ["Bouquets", "Jewellery", "Lamps"], Husband: ["Mens Gifts", "Lamps", "Mugs"], Mother: ["Bouquets", "Frames", "Cushions"], Father: ["Mens Gifts", "Frames", "Mugs"],
-      Sister: ["Jewellery", "Bouquets", "Mugs"], Brother: ["Mens Gifts", "Mugs", "Neon Signs"], Friend: ["Mugs", "Gift Boxes & Hampers", "Neon Signs"], Child: ["Neon Signs", "Cushions", "Balloon Decor"], "Boss / Client": ["Corporate & Awards", "Mens Gifts", "Frames"] };
+      Sister: ["Jewellery", "Bouquets", "Mugs"], Brother: ["Mens Gifts", "Mugs", "Neon Signs"], Friend: ["Mugs", "Gift Boxes & Hampers", "Neon Signs"], Child: ["Neon Signs", "Cushions", "Personal Accessories"], "Boss / Client": ["Corporate & Awards", "Mens Gifts", "Frames"] };
     let cats = prefs[rel] || ["Gift Boxes & Hampers", "Bouquets", "Frames"];
     if (occ.startsWith("Nikkah")) cats = ["Wedding & Nikkah", ...cats];
-    const list = D.products.filter(p => cats.includes(p.cat) && (!p.price || p.price <= budget)).sort((a, b) => cats.indexOf(a.cat) - cats.indexOf(b.cat) || (b.price > 0) - (a.price > 0)).slice(0, 6);
-    $("#ideas").innerHTML = `<h3>Ideas for ${rel || "them"}${occ ? " · " + occ : ""}</h3>` + (list.length ? `<div class="grid prods">${list.map(p => `<article class="prod"><div class="ph">${pic(p.id, catIcon(p.cat), p.name)}</div><div class="in"><h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>${p.price ? `<button class="btn sm" data-p="${p.id}">${p.custom === "none" ? "Add to basket" : "Personalise"}</button>` : `<a class="btn sm" target="_blank" rel="noopener" href="${askWa(`Assalam o Alaikum, I want to order ${p.name} (${p.id}).`)}">Order on WhatsApp</a>`}</div></article>`).join("")}</div>` : `<p class="muted">Try a higher budget, or <a href="#/build">build a custom box</a>.</p>`);
-    bind();
+    const list = D.products.filter(p => cats.includes(p.cat) && (!p.price || p.price <= budget)).sort((a, b) => cats.indexOf(a.cat) - cats.indexOf(b.cat)).slice(0, 6);
+    $("#ideas").innerHTML = `<h3>Ideas for ${esc(rel || "them")}${occ ? " · " + esc(occ) : ""}</h3>` + (list.length ? `<div class="grid prods">${list.map(p => card(p)).join("")}</div>` : `<p class="muted">Try a higher budget, or <a href="/build">build a custom box</a>.</p>`);
   }
 
-  /* ---------- chat (rule-based preview; AI in live site) ---------- */
+  /* ---------- chat ---------- */
   const chatReply = t => {
     t = t.toLowerCase();
     if (/deliver|delivery|shipping|kitne din|city/.test(t)) return `We deliver all over Pakistan. Delivery: ${freeLine()}`;
-    if (/price|kitna|cost|rate/.test(t)) return "Prices are shown on each product. For any item, you can also tap 'Order on WhatsApp' and we will confirm the price.";
+    if (/price|kitna|cost|rate/.test(t)) return "Prices are shown on each product. You can also tap 'Order on WhatsApp' and we will confirm the price.";
     if (/track|status|order id|gh-/.test(t)) return "Open Track Order and enter your Order ID to see the status.";
     if (/bulk|corporate|company|office/.test(t)) return `For bulk or corporate gifts, message us on WhatsApp: wa.me/${D.whatsapp}`;
     if (/abroad|uk|usa|dubai|overseas|bahar/.test(t)) return "Yes! Order from anywhere — we deliver to your family in Pakistan.";
@@ -338,40 +506,18 @@
 
   /* ---------- events ---------- */
   function bind() {
-    document.querySelectorAll("[data-rb]").forEach(b => b.onclick = () => {
-      const r = D.readyBoxes[+b.dataset.rb], box = D.boxes.find(x => x.id === r.box), parts = r.items.map(id => D.fillers.find(f => f.id === id));
-      addCart({ type: "box", box: box.id, items: [...r.items], addons: [], text: "", name: `${r.name} gift box`, price: box.price + parts.reduce((s, x) => s + x.price, 0), detail: parts.map(f => f.name).join(", ") });
-    });
-    document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => location.hash = "#/customize?c=" + b.dataset.c);
-    document.querySelectorAll("[data-p]").forEach(b => b.onclick = () => {
-      const p = D.products.find(x => x.id === b.dataset.p);
-      if (!p || !p.price) return;
-      p.custom === "none" ? addCart({ type: "product", id: p.id, name: p.name, price: p.price }) : openProduct(p);
-    });
-    document.querySelectorAll("[data-b]").forEach(b => b.onclick = () => { B.box = b.dataset.b; const max = D.boxes.find(x => x.id === B.box).slots; B.items = B.items.slice(0, max); renderStage(); });
-    document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => {
-      const max = D.boxes.find(x => x.id === B.box).slots, id = b.dataset.f;
-      if (B.items.includes(id)) B.items = B.items.filter(x => x !== id);
-      else if (B.items.length < max) B.items.push(id); else toast("This box is full — choose a bigger box");
-      renderStage();
-    });
-    document.querySelectorAll("[data-a]").forEach(b => b.onclick = () => { const id = b.dataset.a; B.addons = B.addons.includes(id) ? B.addons.filter(x => x !== id) : [...B.addons, id]; renderStage(); });
-    document.querySelectorAll("[data-r]").forEach(b => b.onclick = () => {
-      if (b.dataset.r === "own") { B.items = []; } else { const r = D.readyBoxes[+b.dataset.r]; B.box = r.box; B.items = r.items.slice(0, D.boxes.find(x => x.id === r.box).slots); }
-      document.querySelectorAll("[data-r]").forEach(x => x.classList.toggle("on", x === b)); renderStage();
-    });
+    const ar = $("#addR"); if (ar) ar.onclick = () => {
+      const r = readyList().find(x => x.id === ar.dataset.r), box = byId(r.box), parts = rParts(r), t = ($("#rbText") || {}).value || "";
+      addCart({ type: "box", ready: r.id, box: box.id, items: r.items.filter(id => D.fillers.some(f => f.id === id)), addons: [], text: t, name: `${r.name} gift box`, price: rTotal(r), detail: [...parts.map(x => x.name), t && `Message: ${t}`].filter(Boolean).join(", ") });
+    };
+    document.querySelectorAll("[data-cat]").forEach(b => b.onclick = () => { B.cat = b.dataset.cat; document.querySelectorAll("[data-cat]").forEach(x => x.classList.toggle("on", x === b)); renderItems(); $("#bbItems").scrollIntoView({ behavior: "smooth", block: "nearest" }); });
     const bt = $("#boxText"); if (bt) bt.oninput = renderStage;
     const ab = $("#addBox"); if (ab) ab.onclick = () => {
-      const box = D.boxes.find(b => b.id === B.box);
-      if (!B.items.length) return toast("Add at least one item");
-      if (B.unpriced) {
-        const lines = [`Assalam o Alaikum! I made this gift box on your website:`, `Box: ${box.name} (${box.id})`, ...B.items.map(id => `• ${D.fillers.find(f => f.id === id).name}`),
-          ...B.addons.map(id => `• Add-on: ${D.addons.find(a => a.id === id).name}`), bt.value && `Text: ${bt.value}`, `Please tell me the price.`].filter(Boolean);
-        location.href = askWa(lines.join("\n")); return;
-      }
-      addCart({ type: "box", box: box.id, items: [...B.items], addons: [...B.addons], text: bt.value, name: `${box.name} gift box`, price: B.total, detail: [...B.items.map(id => D.fillers.find(f => f.id === id).name), ...B.addons.map(id => D.addons.find(a => a.id === id).name), bt.value && `Text: ${bt.value}`].filter(Boolean).join(", ") });
+      const box = byId(B.box); if (!B.items.length) return toast("Add at least one item");
+      addCart({ type: "box", box: box.id, items: [...B.items], addons: [...B.addons], text: bt.value, name: `${box.name} gift box`, price: B.priced ? B.total : 0,
+        detail: [...B.items.map(id => byId(id).name), ...B.addons.map(id => byId(id).name), bt.value && `Text: ${bt.value}`].filter(Boolean).join(", ") });
     };
-    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const c = store.get(); const [gone] = c.splice(+b.dataset.del, 1); if (gone) delete photos[gone.uid]; store.set(c); route(); });
+    document.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { const c = store.get(); const [gone] = c.splice(+b.dataset.del, 1); if (gone) delete photos[gone.uid]; store.set(c); route(false); });
     const o = $("#order"); if (o) o.onsubmit = e => { e.preventDefault(); placeOrder(o); };
     const f = $("#finder"); if (f) {
       f.querySelectorAll(".chips").forEach(g => g.querySelectorAll(".chip").forEach(c => c.onclick = () => { g.querySelectorAll(".chip").forEach(x => x.classList.remove("on")); c.classList.add("on"); }));
@@ -393,22 +539,25 @@
   $("#chatFab").onclick = () => { const c = $("#chat"); c.hidden = !c.hidden; if (!c.hidden && !$("#chatBody").children.length) chatSay("Assalam o Alaikum! Welcome to Gift Haveli. How can I help you today?", "bot"); };
   $("#chatClose").onclick = () => $("#chat").hidden = true;
   $("#chatForm").onsubmit = e => { e.preventDefault(); const v = $("#chatInput").value.trim(); if (!v) return; chatSay(v, "me"); $("#chatInput").value = ""; setTimeout(() => chatSay(chatReply(v), "bot"), 450); };
-  window.addEventListener("hashchange", route);
-  async function load() {
-    try {
-      const j = await (await fetch(D.api)).json();
-      if (!j.ok) throw new Error();
-      const c = j.data;
-      D.whatsapp = c.settings.whatsapp || D.whatsapp; D.delivery = c.settings.delivery; D.freeAbove = c.settings.freeAbove;
-      D.products = c.products; D.boxes = c.boxes; D.fillers = c.fillers; D.addons = c.addons;
-      const names = [...new Set(c.products.map(p => p.cat))].sort((a, b) => (D.catOrder.indexOf(a) + 1 || 99) - (D.catOrder.indexOf(b) + 1 || 99));
-      D.categories = names.map(n => ({ id: slug(n), name: n, icon: catIcon(n) }));
-      ready = true;
-      // drop basket items whose price changed or that are gone
-      const ok = store.get().filter(i => i.type === "box" || (D.products.find(p => p.id === i.id) || {}).price === i.price);
-      if (ok.length !== store.get().length) store.set(ok);
-    } catch (e) { loadErr = "We couldn't load our gifts right now. Please refresh, or message us on WhatsApp."; }
-    route();
+
+  function useCatalog(c) {
+    D.whatsapp = (c.settings && c.settings.whatsapp) || D.whatsapp; if (c.settings) { D.delivery = c.settings.delivery; D.freeAbove = c.settings.freeAbove; }
+    D.products = c.products; D.boxes = c.boxes; D.fillers = c.fillers; D.addons = c.addons; D.ready = c.ready || [];
+    [...D.products, ...D.boxes, ...D.fillers, ...D.addons].forEach(x => { if (!x.gallery || !x.gallery.length) x.gallery = (D.gallery && D.gallery[x.id]) || []; });
+    D.ready.forEach(r => { if (!r.gallery || !r.gallery.length) r.gallery = (D.gallery && D.gallery[r.id]) || []; });
+    const names = [...new Set(c.products.map(p => p.cat))].sort((a, b) => (D.catOrder.indexOf(a) + 1 || 99) - (D.catOrder.indexOf(b) + 1 || 99));
+    D.categories = names.map(n => ({ id: slug(n), name: n, icon: catIcon(n) }));
   }
-  updCount(); route(); load();
+  async function load() {
+    // 1) fast: catalogue snapshot saved with the site; 2) fresh: live from the sheet
+    try { const s = await (await fetch("/catalog.json", { cache: "no-cache" })).json(); useCatalog(s); ready = true; route(false); } catch (e) {}
+    try {
+      const j = await (await fetch(D.api)).json(); if (!j.ok) throw new Error();
+      useCatalog(j.data); ready = true;
+      const ok = store.get().filter(i => i.type === "box" || byId(i.id)); if (ok.length !== store.get().length) store.set(ok);
+      if (!$("#cv") && !$("#bbItems") && !$("#order")) route(false); // don't wipe what the customer is typing
+    } catch (e) { if (!ready) { loadErr = "We couldn't load our gifts right now. Please refresh, or message us on WhatsApp."; route(false); } }
+  }
+  updCount(); if (!window.__PRERENDER_ONLY__) { route(false); load(); }
+  window.__gh = { route, useCatalog, ready: () => { ready = true; } };
 })();
