@@ -37,5 +37,7 @@ window.GH = {
     { name: "For Him", box: "BX-12", items: ["BI-06", "BI-07", "BI-04", "BI-08"] },
     { name: "Eid Mubarak", box: "BX-18", items: ["BI-04", "BI-03", "BI-02", "BI-08"] }
   ],
+  // Website photos (p/<ID>.jpg): only photos with no customer faces, names or other brands' logos.
+  photos: new Set(["AD-01","AD-02","AD-03","BI-02","BI-03","BI-04","BI-05","BI-06","BI-07","BX-01","BX-02","BX-03","BX-04","BX-05","BX-06","BX-07","BX-08","BX-09","BX-10","BX-11","BX-12","BX-13","BX-14","BX-15","BX-16","BX-17","BX-18","BX-19","BX-20","BX-21","GH-003","GH-005","GH-009","GH-013","GH-014","GH-015","GH-017","GH-020","GH-031","GH-033","GH-042","GH-043","GH-044","GH-045","GH-047","GH-049","GH-051","GH-052","GH-053","GH-054","GH-057","GH-060","GH-061","GH-064","GH-065","GH-068","GH-070","GH-071","GH-072","GH-076","GH-077","GH-086","GH-087","GH-089","GH-090","GH-091","GH-092","GH-094","GH-095","GH-097","GH-098","GH-099","GH-100","GH-101","GH-102","GH-106","GH-107","GH-109","GH-111","GH-112","GH-113","GH-114","GH-115","GH-116","GH-117","GH-118","GH-119"]),
   products: [], boxes: [], fillers: [], addons: [], categories: []
 };

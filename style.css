@@ -144,3 +144,5 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--gold)}
 .track li{flex:1;min-width:110px;padding:10px 12px;border-radius:12px;background:rgba(106,27,46,.06);color:rgba(43,15,23,.55);font-weight:600;font-size:.9rem;text-align:center}
 .track li.done{background:var(--maroon);color:var(--cream)}
 .btn[disabled]{opacity:.6;pointer-events:none}
+.prod .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.opt .oimg{width:100%;aspect-ratio:1;object-fit:cover;border-radius:10px;margin-bottom:8px;display:block}

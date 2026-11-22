@@ -3,6 +3,7 @@
   const D = window.GH, $ = (s, r = document) => r.querySelector(s), app = $("#app");
   const rs = n => "Rs " + Number(n).toLocaleString("en-PK");
   const icon = (k, cls = "") => `<svg viewBox="0 0 64 64" class="${cls}">${D.icons[k] || D.icons.box}</svg>`;
+  const pic = (id, ic, alt) => D.photos.has(id) ? `<img src="p/${id}.jpg" alt="${String(alt || "").replace(/"/g, "")}" loading="lazy">` : icon(ic);
   const store = {
     get() { try { return JSON.parse(localStorage.getItem("gh_cart") || "[]"); } catch (e) { return mem; } },
     set(v) { mem = v; try { localStorage.setItem("gh_cart", JSON.stringify(v)); } catch (e) {} updCount(); }
@@ -64,7 +65,7 @@
       <section style="padding-bottom:70px"><div class="wrap">
         <div class="tabs"><button class="tab ${cat === "all" ? "on" : ""}" data-c="all">All</button>${D.categories.map(c => `<button class="tab ${cat === c.id ? "on" : ""}" data-c="${c.id}">${esc(c.name)}</button>`).join("")}</div>
         <div class="grid prods">${list.map(p => `
-          <article class="prod"><div class="ph">${icon(catIcon(p.cat))}</div><div class="in">
+          <article class="prod"><div class="ph">${pic(p.id, catIcon(p.cat), p.name)}</div><div class="in">
             <span class="tag">${({ photo: "Add a photo", text: "Add a name", both: "Photo + name", none: "Ready to gift" })[p.custom] || "Gift"}</span>
             <h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>
             ${p.price ? `<button class="btn sm" data-p="${p.id}" style="margin-top:auto">${p.custom === "none" ? "Add to basket" : "Personalise"}</button>`
@@ -82,11 +83,11 @@
           <h3>1. Start with a ready box, or your own</h3>
           <div class="opt-grid" id="ready">${readyList().map(r => `<button class="opt" data-r="${r.i}"><b>${r.name}</b><small>${r.items.length} items</small></button>`).join("")}<button class="opt" data-r="own"><b>Customize my own</b><small>Start empty</small></button></div>
           <h3>2. Choose the box</h3>
-          <div class="opt-grid" id="boxes">${D.boxes.map(b => `<button class="opt" data-b="${b.id}"><b>${esc(b.name)}</b><small>${esc(b.size)} in · ${priceShort(b)}</small></button>`).join("")}</div>
+          <div class="opt-grid" id="boxes">${D.boxes.map(b => `<button class="opt" data-b="${b.id}">${D.photos.has(b.id) ? `<img class="oimg" src="p/${b.id}.jpg" alt="" loading="lazy">` : ""}<b>${esc(b.name)}</b><small>${esc(b.size)} in · ${priceShort(b)}</small></button>`).join("")}</div>
           <h3>3. Fill it</h3>
-          <div class="opt-grid" id="fillers">${D.fillers.map(f => `<button class="opt" data-f="${f.id}"><b>${esc(f.name)}</b><small>${priceShort(f)}</small></button>`).join("")}</div>
+          <div class="opt-grid" id="fillers">${D.fillers.map(f => `<button class="opt" data-f="${f.id}">${D.photos.has(f.id) ? `<img class="oimg" src="p/${f.id}.jpg" alt="" loading="lazy">` : ""}<b>${esc(f.name)}</b><small>${priceShort(f)}</small></button>`).join("")}</div>
           ${D.addons.length ? `<h3>4. Add-ons</h3>
-          <div class="opt-grid" id="addons">${D.addons.map(a => `<button class="opt" data-a="${a.id}"><b>${esc(a.name)}</b><small>${priceShort(a)}</small></button>`).join("")}</div>` : ""}
+          <div class="opt-grid" id="addons">${D.addons.map(a => `<button class="opt" data-a="${a.id}">${D.photos.has(a.id) ? `<img class="oimg" src="p/${a.id}.jpg" alt="" loading="lazy">` : ""}<b>${esc(a.name)}</b><small>${priceShort(a)}</small></button>`).join("")}</div>` : ""}
           <div class="field"><label>Name or message to print (optional)</label><input id="boxText" maxlength="40" placeholder="e.g. Happy Birthday Ammi"></div>
           <button class="btn" id="addBox">Add box to basket</button>
         </div></div></section>`,
@@ -294,7 +295,7 @@
     let cats = prefs[rel] || ["Gift Boxes & Hampers", "Bouquets", "Frames"];
     if (occ.startsWith("Nikkah")) cats = ["Wedding & Nikkah", ...cats];
     const list = D.products.filter(p => cats.includes(p.cat) && (!p.price || p.price <= budget)).sort((a, b) => cats.indexOf(a.cat) - cats.indexOf(b.cat) || (b.price > 0) - (a.price > 0)).slice(0, 6);
-    $("#ideas").innerHTML = `<h3>Ideas for ${rel || "them"}${occ ? " · " + occ : ""}</h3>` + (list.length ? `<div class="grid prods">${list.map(p => `<article class="prod"><div class="ph">${icon(catIcon(p.cat))}</div><div class="in"><h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>${p.price ? `<button class="btn sm" data-p="${p.id}">${p.custom === "none" ? "Add to basket" : "Personalise"}</button>` : `<a class="btn sm ghost" target="_blank" rel="noopener" href="${askWa(`Assalam o Alaikum, what is the price of ${p.name} (${p.id})?`)}">Ask price</a>`}</div></article>`).join("")}</div>` : `<p class="muted">Try a higher budget, or <a href="#/build">build a custom box</a>.</p>`);
+    $("#ideas").innerHTML = `<h3>Ideas for ${rel || "them"}${occ ? " · " + occ : ""}</h3>` + (list.length ? `<div class="grid prods">${list.map(p => `<article class="prod"><div class="ph">${pic(p.id, catIcon(p.cat), p.name)}</div><div class="in"><h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>${p.price ? `<button class="btn sm" data-p="${p.id}">${p.custom === "none" ? "Add to basket" : "Personalise"}</button>` : `<a class="btn sm ghost" target="_blank" rel="noopener" href="${askWa(`Assalam o Alaikum, what is the price of ${p.name} (${p.id})?`)}">Ask price</a>`}</div></article>`).join("")}</div>` : `<p class="muted">Try a higher budget, or <a href="#/build">build a custom box</a>.</p>`);
     bind();
   }
 
