@@ -12,8 +12,8 @@
   const updCount = () => $("#cartCount").textContent = store.get().length;
   const toast = t => { const el = $("#toast"); el.textContent = t; el.classList.add("show"); setTimeout(() => el.classList.remove("show"), 2200); };
   const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  const price = p => p.price ? rs(p.price) : "Price on request";
-  const priceShort = p => p.price ? rs(p.price) : "Price soon";
+  const price = p => p.price ? rs(p.price) : "Rs 0000";
+  const priceShort = p => p.price ? rs(p.price) : "Rs 0000";
   const slug = t => String(t).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const catIcon = c => D.catIcons[c] || "box";
   const askWa = t => `https://wa.me/${D.whatsapp}?text=${encodeURIComponent(t)}`;
@@ -33,6 +33,11 @@
         </div>
       </section>
       <section class="block"><div class="wrap">
+        <p class="eyebrow">Ready to gift</p><h2>Ready-made boxes, hampers & bouquets</h2>
+        <p class="muted" style="max-width:60ch">Complete gifts, already put together. Nothing to choose — just order and we deliver.</p>
+        <div class="grid prods" style="margin-top:26px">${ready ? readyGifts() : `<p class="muted">${loadErr || "Loading…"}</p>`}</div>
+      </div></section>
+      <section class="block" style="padding-top:0"><div class="wrap">
         <p class="eyebrow">Shop by category</p><h2>Something for every someone</h2>
         <div class="grid cats" style="margin-top:26px">${D.categories.length ? D.categories.map(c => `<a class="cat" href="#/customize?c=${c.id}">${icon(c.icon)}<b>${esc(c.name)}</b></a>`).join("") : `<p class="muted">${loadErr || "Loading…"}</p>`}</div>
       </div></section>
@@ -69,7 +74,7 @@
             <span class="tag">${({ photo: "Add a photo", text: "Add a name", both: "Photo + name", none: "Ready to gift" })[p.custom] || "Gift"}</span>
             <h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>
             ${p.price ? `<button class="btn sm" data-p="${p.id}" style="margin-top:auto">${p.custom === "none" ? "Add to basket" : "Personalise"}</button>`
-              : `<a class="btn sm ghost" style="margin-top:auto" target="_blank" rel="noopener" href="${askWa(`Assalam o Alaikum, what is the price of ${p.name} (${p.id})?`)}">Ask price on WhatsApp</a>`}</div></article>`).join("")}</div>
+              : `<a class="btn sm" style="margin-top:auto" target="_blank" rel="noopener" href="${askWa(`Assalam o Alaikum, I want to order ${p.name} (${p.id}).`)}">Order on WhatsApp</a>`}</div></article>`).join("")}</div>
       </div></section>`;
     },
 
@@ -217,6 +222,25 @@
     };
   }
 
+  /* ---------- ready-made gifts (home) ---------- */
+  function readyGifts() {
+    const boxes = readyList().map(r => {
+      const box = D.boxes.find(b => b.id === r.box), parts = r.items.map(id => D.fillers.find(f => f.id === id));
+      const all = [box, ...parts], priced = all.every(x => x.price), total = all.reduce((s, x) => s + x.price, 0);
+      const msg = [`Assalam o Alaikum, I want to order the ready-made "${r.name}" gift box:`, `Box: ${box.name} (${box.id})`, ...parts.map(f => `• ${f.name}`)].join("\n");
+      return `<article class="prod"><div class="ph">${pic(box.id, "box", r.name)}</div><div class="in">
+        <span class="tag">Ready-made box</span><h3>${esc(r.name)}</h3><p class="muted" style="font-size:.9rem;margin:0">${esc(parts.map(f => f.name).join(", "))}</p>
+        <span class="price">${priced ? rs(total) : "Rs 0000"}</span>
+        ${priced ? `<button class="btn sm" data-rb="${r.i}" style="margin-top:auto">Add to basket</button>` : `<a class="btn sm" style="margin-top:auto" target="_blank" rel="noopener" href="${askWa(msg)}">Order on WhatsApp</a>`}</div></article>`;
+    });
+    const prods = D.products.filter(p => /hamper|box|bouquet|basket/i.test(p.cat)).map(p => `
+      <article class="prod"><div class="ph">${pic(p.id, catIcon(p.cat), p.name)}</div><div class="in">
+        <span class="tag">${esc(p.cat)}</span><h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>
+        ${p.price ? `<button class="btn sm" data-p="${p.id}" style="margin-top:auto">${p.custom === "none" ? "Add to basket" : "Personalise"}</button>`
+          : `<a class="btn sm" style="margin-top:auto" target="_blank" rel="noopener" href="${askWa(`Assalam o Alaikum, I want to order ${p.name} (${p.id}).`)}">Order on WhatsApp</a>`}</div></article>`);
+    return [...boxes, ...prods].join("");
+  }
+
   /* ---------- box builder ---------- */
   let B = { box: null, items: [], addons: [] };
   function initBuilder() { if (!D.boxes.length || !D.fillers.length) return; B = { box: D.boxes[0].id, items: [], addons: [] }; renderStage(); }
@@ -246,7 +270,7 @@
     B.total = sub;
     const parts = [box, ...B.items.map(id => D.fillers.find(f => f.id === id)), ...B.addons.map(id => D.addons.find(a => a.id === id))];
     B.unpriced = parts.some(x => !x.price);
-    if (B.unpriced) $("#stage .total b").textContent = "Price on WhatsApp";
+    if (B.unpriced) $("#stage .total b").textContent = "Rs 0000";
     const ab = $("#addBox"); if (ab) ab.textContent = B.unpriced ? "Send this box on WhatsApp" : "Add box to basket";
   }
 
@@ -295,7 +319,7 @@
     let cats = prefs[rel] || ["Gift Boxes & Hampers", "Bouquets", "Frames"];
     if (occ.startsWith("Nikkah")) cats = ["Wedding & Nikkah", ...cats];
     const list = D.products.filter(p => cats.includes(p.cat) && (!p.price || p.price <= budget)).sort((a, b) => cats.indexOf(a.cat) - cats.indexOf(b.cat) || (b.price > 0) - (a.price > 0)).slice(0, 6);
-    $("#ideas").innerHTML = `<h3>Ideas for ${rel || "them"}${occ ? " · " + occ : ""}</h3>` + (list.length ? `<div class="grid prods">${list.map(p => `<article class="prod"><div class="ph">${pic(p.id, catIcon(p.cat), p.name)}</div><div class="in"><h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>${p.price ? `<button class="btn sm" data-p="${p.id}">${p.custom === "none" ? "Add to basket" : "Personalise"}</button>` : `<a class="btn sm ghost" target="_blank" rel="noopener" href="${askWa(`Assalam o Alaikum, what is the price of ${p.name} (${p.id})?`)}">Ask price</a>`}</div></article>`).join("")}</div>` : `<p class="muted">Try a higher budget, or <a href="#/build">build a custom box</a>.</p>`);
+    $("#ideas").innerHTML = `<h3>Ideas for ${rel || "them"}${occ ? " · " + occ : ""}</h3>` + (list.length ? `<div class="grid prods">${list.map(p => `<article class="prod"><div class="ph">${pic(p.id, catIcon(p.cat), p.name)}</div><div class="in"><h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>${p.price ? `<button class="btn sm" data-p="${p.id}">${p.custom === "none" ? "Add to basket" : "Personalise"}</button>` : `<a class="btn sm" target="_blank" rel="noopener" href="${askWa(`Assalam o Alaikum, I want to order ${p.name} (${p.id}).`)}">Order on WhatsApp</a>`}</div></article>`).join("")}</div>` : `<p class="muted">Try a higher budget, or <a href="#/build">build a custom box</a>.</p>`);
     bind();
   }
 
@@ -303,7 +327,7 @@
   const chatReply = t => {
     t = t.toLowerCase();
     if (/deliver|delivery|shipping|kitne din|city/.test(t)) return `We deliver all over Pakistan. Delivery: ${freeLine()}`;
-    if (/price|kitna|cost|rate/.test(t)) return "Prices are shown on each product. If a product says 'Price on request', tap 'Ask price on WhatsApp'.";
+    if (/price|kitna|cost|rate/.test(t)) return "Prices are shown on each product. For any item, you can also tap 'Order on WhatsApp' and we will confirm the price.";
     if (/track|status|order id|gh-/.test(t)) return "Open Track Order and enter your Order ID to see the status.";
     if (/bulk|corporate|company|office/.test(t)) return `For bulk or corporate gifts, message us on WhatsApp: wa.me/${D.whatsapp}`;
     if (/abroad|uk|usa|dubai|overseas|bahar/.test(t)) return "Yes! Order from anywhere — we deliver to your family in Pakistan.";
@@ -314,6 +338,10 @@
 
   /* ---------- events ---------- */
   function bind() {
+    document.querySelectorAll("[data-rb]").forEach(b => b.onclick = () => {
+      const r = D.readyBoxes[+b.dataset.rb], box = D.boxes.find(x => x.id === r.box), parts = r.items.map(id => D.fillers.find(f => f.id === id));
+      addCart({ type: "box", box: box.id, items: [...r.items], addons: [], text: "", name: `${r.name} gift box`, price: box.price + parts.reduce((s, x) => s + x.price, 0), detail: parts.map(f => f.name).join(", ") });
+    });
     document.querySelectorAll("[data-c]").forEach(b => b.onclick = () => location.hash = "#/customize?c=" + b.dataset.c);
     document.querySelectorAll("[data-p]").forEach(b => b.onclick = () => {
       const p = D.products.find(x => x.id === b.dataset.p);
