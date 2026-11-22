@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Gift Haveli Admin</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+@font-face{font-family:"Fraunces";src:url(/Fraunces.ttf)}@font-face{font-family:"DM Sans";src:url(/DMSans.ttf)}
+:root{--m:#6A1B2E;--g:#C9A24B;--c:#FAF3E7;--ink:#2B0F17;--mu:#6b5a4e}
+*{box-sizing:border-box}body{margin:0;font-family:"DM Sans",system-ui,sans-serif;background:var(--c);color:var(--ink)}
+h1,h2,h3{font-family:Fraunces,serif;color:var(--m);font-weight:560;margin:0 0 .4em}
+header{background:var(--m);color:var(--c);display:flex;align-items:center;gap:16px;padding:12px 20px;position:sticky;top:0;z-index:5;flex-wrap:wrap}
+header b{font-family:Fraunces;font-size:1.3rem}header nav{display:flex;gap:6px;flex-wrap:wrap}
+header nav button{background:transparent;border:1px solid rgba(255,255,255,.3);color:var(--c);border-radius:999px;padding:.4em 1em;cursor:pointer;font:inherit}
+header nav button.on{background:var(--g);color:var(--ink);border-color:var(--g)}
+header .sp{flex:1}header a{color:#f0dcc4;font-size:.9rem}
+main{padding:20px;max-width:1300px;margin:0 auto}
+.btn{background:var(--m);color:var(--c);border:0;border-radius:999px;padding:.6em 1.2em;font:600 .9rem "DM Sans";cursor:pointer}
+.btn.ghost{background:transparent;color:var(--m);border:1.5px solid var(--m)}.btn.sm{padding:.35em .8em;font-size:.8rem}.btn:disabled{opacity:.5}
+input,select,textarea{font:inherit;padding:.55em .7em;border-radius:10px;border:1.5px solid rgba(106,27,46,.2);background:#fff;width:100%}
+label{font-weight:600;font-size:.85rem;display:grid;gap:4px}
+.card{background:#fff;border-radius:16px;padding:18px;border:1px solid rgba(201,162,75,.3)}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}.bar input,.bar select{width:auto;min-width:160px}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden}
+th,td{padding:8px 10px;border-bottom:1px solid #f0e6d6;text-align:left;font-size:.9rem;vertical-align:middle}
+th{background:#f6ecdd;font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--mu)}
+td img{width:46px;height:46px;object-fit:cover;border-radius:8px}
+tr.off td{opacity:.45}
+.pill{font-size:.72rem;padding:.15em .6em;border-radius:999px;background:#f3e6d3}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.modal{position:fixed;inset:0;background:rgba(43,15,23,.55);display:grid;place-items:center;padding:14px;z-index:20}
+.sheet{background:var(--c);border-radius:20px;max-width:900px;width:100%;max-height:92vh;overflow:auto;padding:22px}
+.gal{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.gal div{position:relative}.gal img{width:84px;height:84px;object-fit:cover;border-radius:10px}
+.gal button{position:absolute;top:2px;right:2px;background:#fff;border:0;border-radius:50%;width:22px;height:22px;cursor:pointer}
+.gal .mv{right:auto;left:2px}
+.msg{padding:10px 14px;border-radius:10px;background:#f3e6d3;margin:10px 0}.err{background:#f6d8d2}
+.login{max-width:380px;margin:12vh auto}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:18px}.stats .card b{font-family:Fraunces;font-size:1.8rem;color:var(--m);display:block}
+.items{display:flex;flex-wrap:wrap;gap:6px}.items label{display:flex;align-items:center;gap:6px;font-weight:400;background:#fff;border:1px solid #eadfcd;border-radius:999px;padding:.3em .8em}.items input{width:auto}
+@media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}td:nth-child(n+6){display:none}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="/data.js"></script>
+<script>
+(() => {
+  const D = window.GH, API = D.api, $ = s => document.querySelector(s), root = $("#root");
+  const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  const src = r => !r ? "" : /^(p|assets)\//.test(r) ? "/" + r : /^https?:/.test(r) ? r : `https://lh3.googleusercontent.com/d/${r}=w300`;
+  let pass = sessionStorage.getItem("gh_admin") || "", data = null, orders = [], tab = "products", msg = "";
+  const call = async (action, extra = {}) => { const r = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action, pass, ...extra }) }); return r.json(); };
+  const TYPES = ["Product", "Main Box", "Box Item", "Add-on"], CUSTOM = ["Both", "Photo", "Text", "None"];
+  const allItems = () => [...data.products, ...data.boxes, ...data.fillers, ...data.addons];
+  const gal = x => (x.gallery && x.gallery.length) ? x.gallery : (D.gallery[x.id] || []);
+
+  function login(err) {
+    root.innerHTML = `<div class="login card"><h2>Gift Haveli Admin</h2><p style="color:var(--mu)">Enter the admin password.</p>
+      <form id="lf"><input type="password" id="pw" autocomplete="current-password" required><button class="btn" style="margin-top:12px;width:100%">Log in</button></form>${err ? `<p class="msg err">${esc(err)}</p>` : ""}</div>`;
+    $("#lf").onsubmit = async e => { e.preventDefault(); pass = $("#pw").value; const j = await call("admin_login").catch(() => ({ ok: false, error: "Could not reach the server." }));
+      if (j.ok) { sessionStorage.setItem("gh_admin", pass); load(); } else login(j.error); };
+  }
+  async function load() {
+    root.innerHTML = `<main><p>Loading…</p></main>`;
+    const j = await call("admin_data").catch(() => ({ ok: false, error: "Could not reach the server." }));
+    if (!j.ok) { sessionStorage.removeItem("gh_admin"); return login(j.error); }
+    data = j.data; orders = j.orders || []; render();
+  }
+  function shell(body) {
+    const tabs = [["products", "Products"], ["boxes", "Boxes & box items"], ["ready", "Ready-made boxes"], ["orders", "Orders"], ["settings", "Settings"]];
+    root.innerHTML = `<header><b>Gift Haveli Admin</b><nav>${tabs.map(([k, n]) => `<button data-t="${k}" class="${tab === k ? "on" : ""}">${n}</button>`).join("")}</nav><span class="sp"></span><a href="/" target="_blank">View website</a><button class="btn sm ghost" id="out" style="color:#fff;border-color:#fff">Log out</button></header>
+      <main>${msg ? `<div class="msg">${esc(msg)}</div>` : ""}${body}</main>`;
+    msg = "";
+    document.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { tab = b.dataset.t; render(); });
+    $("#out").onclick = () => { sessionStorage.removeItem("gh_admin"); pass = ""; login(); };
+  }
+  function render() {
+    if (tab === "products" || tab === "boxes") return renderList(tab === "products" ? ["Product"] : ["Main Box", "Box Item", "Add-on"]);
+    if (tab === "ready") return renderReady();
+    if (tab === "orders") return renderOrders();
+    return renderSettings();
+  }
+
+  /* ---- products / boxes ---- */
+  function renderList(types) {
+    const list = allItems().filter(x => types.includes(x.type || "Product"));
+    const cats = [...new Set(list.map(x => x.cat).filter(Boolean))].sort();
+    shell(`<div class="stats"><div class="card"><b>${list.length}</b>items</div><div class="card"><b>${list.filter(x => x.show).length}</b>on website</div><div class="card"><b>${list.filter(x => !x.price).length}</b>without price</div><div class="card"><b>${list.filter(x => !gal(x).length).length}</b>without photos</div></div>
+      <div class="bar"><input id="q" placeholder="Search name or ID"><select id="fc"><option value="">All categories</option>${cats.map(c => `<option>${esc(c)}</option>`).join("")}</select>
+        <select id="fs"><option value="">All</option><option value="y">On website</option><option value="n">Hidden</option><option value="np">No price</option></select>
+        <span class="sp" style="flex:1"></span><button class="btn" id="add">+ Add new</button></div>
+      <table><thead><tr><th></th><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Type</th><th>Website</th><th></th></tr></thead><tbody id="tb"></tbody></table>`);
+    const draw = () => {
+      const q = $("#q").value.toLowerCase(), fc = $("#fc").value, fs = $("#fs").value;
+      $("#tb").innerHTML = list.filter(x => (!q || (x.name + " " + x.id).toLowerCase().includes(q)) && (!fc || x.cat === fc) && (!fs || (fs === "y" ? x.show : fs === "n" ? !x.show : !x.price)))
+        .map(x => `<tr class="${x.show ? "" : "off"}"><td>${gal(x)[0] ? `<img src="${src(gal(x)[0])}" alt="">` : ""}</td><td>${esc(x.id)}</td><td>${esc(x.name)}</td><td>${esc(x.cat)}</td><td>${x.price ? "Rs " + x.price : "<span class=pill>no price</span>"}</td><td>${esc(x.type)}</td>
+          <td><button class="btn sm ${x.show ? "" : "ghost"}" data-sh="${x.id}">${x.show ? "Shown" : "Hidden"}</button></td><td><button class="btn sm ghost" data-ed="${x.id}">Edit</button></td></tr>`).join("");
+      document.querySelectorAll("[data-ed]").forEach(b => b.onclick = () => edit(allItems().find(x => x.id === b.dataset.ed)));
+      document.querySelectorAll("[data-sh]").forEach(b => b.onclick = async () => { const x = allItems().find(y => y.id === b.dataset.sh); b.disabled = true;
+        const j = await call("admin_save_product", { p: { id: x.id, show: !x.show } }); if (j.ok) { x.show = !x.show; draw(); } else alert(j.error); });
+    };
+    ["q", "fc", "fs"].forEach(i => $("#" + i).oninput = draw); draw();
+    $("#add").onclick = () => edit({ id: "", type: types[0], name: "", cat: "", price: 0, custom: types[0] === "Product" ? "both" : "none", show: true, gallery: [] });
+  }
+  function edit(x) {
+    let g = [...gal(x)];
+    const m = document.createElement("div"); m.className = "modal";
+    const cats = [...new Set(allItems().map(y => y.cat).filter(Boolean))].sort();
+    m.innerHTML = `<div class="sheet"><h2>${x.id ? "Edit " + esc(x.id) : "Add new"}</h2>
+      <form id="ef"><div class="grid2">
+        <label>Name<input name="name" value="${esc(x.name)}" required></label>
+        <label>Type<select name="type">${TYPES.map(t => `<option ${t === (x.type || "Product") ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+        <label>Category<input name="cat" list="cats" value="${esc(x.cat)}"><datalist id="cats">${cats.map(c => `<option>${esc(c)}</option>`).join("")}</datalist></label>
+        <label>Customization<select name="custom">${CUSTOM.map(c => `<option ${c.toLowerCase() === String(x.custom || "").toLowerCase() ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+        <label>Sale price (Rs) — 0 = not set<input name="price" type="number" min="0" value="${x.price || 0}"></label>
+        <label>Cost price (Rs)<input name="cost" type="number" min="0" value="${x.cost || ""}"></label>
+        <label>Size (inches)<input name="size" value="${esc(x.size || "")}"></label>
+        <label>Max items (boxes only)<input name="slots" type="number" min="0" value="${x.slots || ""}"></label>
+      </div>
+      <label style="margin-top:12px">Description (shown on the product page)<textarea name="desc" rows="3">${esc(x.desc || "")}</textarea></label>
+      <label style="margin-top:12px">Drive folder link<input name="drive" value="${esc(x.drive || "")}"></label>
+      <label style="margin-top:12px">Notes (only you see this)<input name="notes" value="${esc(x.notes || "")}"></label>
+      <label style="margin-top:12px;display:flex;gap:8px;align-items:center"><input type="checkbox" name="show" style="width:auto" ${x.show ? "checked" : ""}> Show on website</label>
+      <h3 style="margin-top:16px">Photos <small style="font-family:DM Sans;color:var(--mu)">(first photo is the main one)</small></h3><div class="gal" id="gl"></div>
+      <label>Add photos<input type="file" id="up" accept="image/*" multiple></label><p id="upm" style="color:var(--mu);font-size:.85rem"></p>
+      <div class="bar" style="margin-top:16px"><button class="btn" id="sv">Save</button><button type="button" class="btn ghost" id="cx">Cancel</button></div></form></div>`;
+    document.body.appendChild(m);
+    const drawG = () => { m.querySelector("#gl").innerHTML = g.map((r, i) => `<div><img src="${src(r)}" alt=""><button type="button" data-rm="${i}" title="Remove">×</button>${i ? `<button type="button" class="mv" data-mv="${i}" title="Make main">★</button>` : ""}</div>`).join("") || `<p style="color:var(--mu)">No photos yet.</p>`;
+      m.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { g.splice(+b.dataset.rm, 1); drawG(); });
+      m.querySelectorAll("[data-mv]").forEach(b => b.onclick = () => { const [it] = g.splice(+b.dataset.mv, 1); g.unshift(it); drawG(); }); };
+    drawG();
+    m.querySelector("#cx").onclick = () => m.remove();
+    m.querySelector("#up").onchange = async e => {
+      const fs = [...e.target.files], st = m.querySelector("#upm");
+      for (let i = 0; i < fs.length; i++) {
+        st.textContent = `Uploading ${i + 1} of ${fs.length}…`;
+        const data64 = await shrink(fs[i]);
+        const j = await call("admin_upload", { data: data64, type: "image/jpeg", name: (x.id || "new") + "-" + Date.now() + ".jpg", drive: m.querySelector("[name=drive]").value });
+        if (j.ok) { g.push(j.id); drawG(); } else { st.textContent = j.error; return; }
+      }
+      st.textContent = "Uploaded. Press Save to keep them.";
+    };
+    m.querySelector("#ef").onsubmit = async e => {
+      e.preventDefault(); const f = new FormData(e.target), b = m.querySelector("#sv"); b.disabled = true; b.textContent = "Saving…";
+      const p = { id: x.id, name: f.get("name"), type: f.get("type"), cat: f.get("cat"), custom: f.get("custom"), price: +f.get("price") || 0, cost: +f.get("cost") || "",
+        size: f.get("size"), slots: +f.get("slots") || "", desc: f.get("desc"), drive: f.get("drive"), notes: f.get("notes"), show: !!f.get("show"), gallery: g };
+      const j = await call("admin_save_product", { p });
+      if (!j.ok) { alert(j.error); b.disabled = false; b.textContent = "Save"; return; }
+      m.remove(); msg = `Saved ${j.id}. The website shows changes within 2 minutes.`; load();
+    };
+  }
+  function shrink(file) { return new Promise(res => { const r = new FileReader(); r.onload = () => { const i = new Image(); i.onload = () => {
+    const k = Math.min(1, 1600 / Math.max(i.width, i.height)), c = document.createElement("canvas"); c.width = Math.round(i.width * k); c.height = Math.round(i.height * k);
+    c.getContext("2d").drawImage(i, 0, 0, c.width, c.height); res(c.toDataURL("image/jpeg", .88).split(",")[1]); }; i.src = r.result; }; r.readAsDataURL(file); }); }
+
+  /* ---- ready boxes ---- */
+  function renderReady() {
+    shell(`<div class="bar"><h2 style="margin:0">Ready-made boxes</h2><span style="flex:1"></span><button class="btn" id="add">+ Add ready box</button></div>
+      <table><thead><tr><th></th><th>ID</th><th>Name</th><th>Box</th><th>Items</th><th>Website</th><th></th></tr></thead><tbody>${data.ready.map(r => `<tr class="${r.show ? "" : "off"}"><td>${gal(r)[0] ? `<img src="${src(gal(r)[0])}">` : ""}</td><td>${esc(r.id)}</td><td>${esc(r.name)}</td><td>${esc((allItems().find(x => x.id === r.box) || {}).name || r.box)}</td><td>${r.items.length}</td><td>${r.show ? "Shown" : "Hidden"}</td><td><button class="btn sm ghost" data-er="${esc(r.id)}">Edit</button></td></tr>`).join("")}</tbody></table>`);
+    document.querySelectorAll("[data-er]").forEach(b => b.onclick = () => editReady(data.ready.find(r => r.id === b.dataset.er)));
+    $("#add").onclick = () => editReady({ id: "", name: "", box: data.boxes[0] && data.boxes[0].id, items: [], desc: "", gallery: [], show: true });
+  }
+  function editReady(r) {
+    let g = [...gal(r)]; const m = document.createElement("div"); m.className = "modal";
+    m.innerHTML = `<div class="sheet"><h2>${r.id ? "Edit " + esc(r.name) : "New ready box"}</h2><form id="rf">
+      <div class="grid2"><label>Name<input name="name" value="${esc(r.name)}" required></label>
+      <label>Box<select name="box">${data.boxes.map(b => `<option value="${b.id}" ${b.id === r.box ? "selected" : ""}>${esc(b.name)} (${b.id})</option>`).join("")}</select></label></div>
+      <h3 style="margin-top:14px">Items inside</h3><div class="items">${[...data.fillers, ...data.addons].map(f => `<label><input type="checkbox" name="it" value="${f.id}" ${r.items.includes(f.id) ? "checked" : ""}>${esc(f.name)}</label>`).join("")}</div>
+      <label style="margin-top:12px">Description<textarea name="desc" rows="3">${esc(r.desc)}</textarea></label>
+      <label style="margin-top:12px;display:flex;gap:8px;align-items:center"><input type="checkbox" name="show" style="width:auto" ${r.show ? "checked" : ""}> Show on website</label>
+      <h3 style="margin-top:14px">Photos</h3><div class="gal" id="gl"></div><label>Add photos<input type="file" id="up" accept="image/*" multiple></label><p id="upm"></p>
+      <div class="bar"><button class="btn" id="sv">Save</button><button type="button" class="btn ghost" id="cx">Cancel</button></div></form></div>`;
+    document.body.appendChild(m);
+    const drawG = () => { m.querySelector("#gl").innerHTML = g.map((x, i) => `<div><img src="${src(x)}"><button type="button" data-rm="${i}">×</button></div>`).join(""); m.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { g.splice(+b.dataset.rm, 1); drawG(); }); };
+    drawG(); m.querySelector("#cx").onclick = () => m.remove();
+    m.querySelector("#up").onchange = async e => { for (const f of e.target.files) { m.querySelector("#upm").textContent = "Uploading…"; const j = await call("admin_upload", { data: await shrink(f), type: "image/jpeg", name: "ready-" + Date.now() + ".jpg" }); if (j.ok) { g.push(j.id); drawG(); } } m.querySelector("#upm").textContent = "Uploaded. Press Save."; };
+    m.querySelector("#rf").onsubmit = async e => { e.preventDefault(); const f = new FormData(e.target);
+      const j = await call("admin_save_ready", { r: { id: r.id, name: f.get("name"), box: f.get("box"), items: f.getAll("it"), desc: f.get("desc"), gallery: g, show: !!f.get("show") } });
+      if (!j.ok) return alert(j.error); m.remove(); msg = "Ready box saved."; load(); };
+  }
+
+  /* ---- orders ---- */
+  function renderOrders() {
+    const ST = ["Confirmed", "Making", "Shipped", "Delivered", "Cancelled"], PAY = ["Pending", "Paid", "Partly paid", "Refunded"];
+    shell(`<div class="stats">${ST.map(s => `<div class="card"><b>${orders.filter(o => (o.Status || "Confirmed") === s).length}</b>${s}</div>`).join("")}</div>
+      <table><thead><tr><th>Order</th><th>Date</th><th>Sender</th><th>Receiver</th><th>Items</th><th>Total</th><th>Status</th><th>Payment</th></tr></thead><tbody>${orders.map(o => `<tr>
+        <td><b>${esc(o["Order ID"])}</b></td><td>${esc(o["Order Date"])}</td><td>${esc(o["Sender Name"])}<br><small>${esc(o["Sender WhatsApp"])}</small></td>
+        <td>${esc(o["Receiver Name"])}<br><small>${esc(o["Receiver City"])} · ${esc(o["Delivery Date"])}</small></td>
+        <td style="white-space:pre-line;font-size:.82rem;max-width:320px">${esc(o.Items)}${o["Uploaded Photo Links"] ? `<br><a href="${esc(String(o["Uploaded Photo Links"]).split("\n")[0])}" target="_blank">Photos</a>` : ""}</td>
+        <td>${o.Notes && /confirm/i.test(o.Notes) ? "To confirm" : "Rs " + esc(o["Grand Total"])}</td>
+        <td><select data-os="${esc(o["Order ID"])}">${ST.map(s => `<option ${s === (o.Status || "Confirmed") ? "selected" : ""}>${s}</option>`).join("")}</select></td>
+        <td><select data-op="${esc(o["Order ID"])}">${PAY.map(s => `<option ${s === (o["Payment Status"] || "Pending") ? "selected" : ""}>${s}</option>`).join("")}</select></td></tr>`).join("") || `<tr><td colspan=8>No orders yet.</td></tr>`}</tbody></table>`);
+    document.querySelectorAll("[data-os]").forEach(s => s.onchange = async () => { const j = await call("admin_order_status", { id: s.dataset.os, status: s.value }); if (!j.ok) alert(j.error); });
+    document.querySelectorAll("[data-op]").forEach(s => s.onchange = async () => { const j = await call("admin_order_status", { id: s.dataset.op, payment: s.value }); if (!j.ok) alert(j.error); });
+  }
+
+  /* ---- settings ---- */
+  function renderSettings() {
+    const s = data.settings;
+    shell(`<div class="grid2"><form class="card" id="sf"><h3>Shop settings</h3>
+        <label>WhatsApp number (with 92)<input name="whatsapp" value="${esc(s.whatsapp)}"></label>
+        <label style="margin-top:10px">Delivery charge (Rs)<input name="delivery" type="number" value="${s.delivery}"></label>
+        <label style="margin-top:10px">Free delivery above (Rs, 0 = never)<input name="freeAbove" type="number" value="${s.freeAbove || 0}"></label>
+        <button class="btn" style="margin-top:14px">Save settings</button></form>
+      <form class="card" id="pf"><h3>Change admin password</h3><label>New password (8+ characters)<input type="password" name="np" minlength="8" required></label>
+        <button class="btn" style="margin-top:14px">Change password</button></form></div>`);
+    $("#sf").onsubmit = async e => { e.preventDefault(); const f = new FormData(e.target); const j = await call("admin_settings", { s: { whatsapp: f.get("whatsapp"), delivery: +f.get("delivery"), freeAbove: +f.get("freeAbove") } }); msg = j.ok ? "Settings saved." : j.error; load(); };
+    $("#pf").onsubmit = async e => { e.preventDefault(); const np = new FormData(e.target).get("np"); const j = await call("admin_password", { newPass: np }); if (j.ok) { pass = np; sessionStorage.setItem("gh_admin", np); msg = "Password changed."; } else msg = j.error; render(); };
+  }
+
+  pass ? load() : login();
+})();
+</script>
+</body>
+</html>
