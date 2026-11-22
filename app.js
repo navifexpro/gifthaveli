@@ -302,6 +302,51 @@
       <section style="padding-bottom:80px"><div class="wrap" style="max-width:760px">${qa.map(([q, a]) => `<details class="card" style="margin-bottom:12px"><summary><b>${q}</b></summary><p style="margin-top:10px">${a}</p></details>`).join("")}</div></section>`;
     }
   };
+
+  /* ---------- info & policy pages ---------- */
+  const infoPage = (key, eyebrow, title, desc, body) => { pages[key] = () => { meta(title + " | Gift Haveli", desc, key, { "@context": "https://schema.org", "@graph": [{ "@type": "WebPage", name: title }, crumbs([["Home", "/"], [title, key]])] });
+    return `<section class="page-head"><div class="wrap"><p class="eyebrow">${eyebrow}</p><h1>${title}</h1></div></section><section style="padding-bottom:80px"><div class="wrap prose">${body()}</div></section>`; }; };
+  const wa = () => `<a href="https://wa.me/${D.whatsapp}" target="_blank" rel="noopener">WhatsApp 0313-0111349</a>`;
+  const mail = `<a href="mailto:thegifthaveli@gmail.com">thegifthaveli@gmail.com</a>`;
+  const updated = `<p class="muted" style="font-size:.85rem">Last updated: 22 November 2026</p>`;
+  infoPage("/about", "Our story", "About Gift Haveli", "Gift Haveli makes customized gifts, gift boxes, hampers and bouquets in Lahore and delivers them all over Pakistan.", () => `
+    <p>Gift Haveli is a Lahore-based gift shop. We make customized gifts — gift boxes, hampers, chocolate bouquets, printed mugs, photo frames, lamps, jewellery and Nikkah keepsakes — and deliver them all over Pakistan.</p>
+    <p>Every gift is made for one person. You choose the gift, add a name, a photo or a message, and we put it together by hand.</p>
+    <p>Many of our customers live abroad. You can order here from anywhere and we deliver your gift to your family in Pakistan, with your message inside.</p>
+    <h2>Talk to us</h2><p>${wa()} · ${mail}</p>`);
+  infoPage("/contact", "Contact", "Contact Us", "Contact Gift Haveli on WhatsApp 0313-0111349 or email thegifthaveli@gmail.com for orders, bulk and corporate gifts.", () => `
+    <div class="grid two" style="gap:20px"><div class="card"><h3>WhatsApp</h3><p>The fastest way to reach us for orders, prices and order updates.</p><p>${wa()}</p></div>
+    <div class="card"><h3>Email</h3><p>For corporate and bulk orders, or anything else.</p><p>${mail}</p></div></div>
+    <p style="margin-top:20px">Based in Lahore · Delivery all over Pakistan.</p>`);
+  infoPage("/shipping-policy", "Policies", "Shipping & Delivery Policy", "Gift Haveli delivers all over Pakistan. Delivery charges, delivery dates and order tracking explained.", () => `${updated}
+    <h2>Where we deliver</h2><p>We deliver all over Pakistan. We do not deliver outside Pakistan, but you can order from anywhere in the world for someone in Pakistan.</p>
+    <h2>Delivery charges</h2><p>Delivery is ${freeLine()} The delivery charge is shown in your basket before you place the order.</p>
+    <h2>Delivery date</h2><p>Every gift is made to order. You choose a delivery date when you order. We confirm the date with you on WhatsApp after we check your order. If we cannot make it on that date, we will tell you before we start.</p>
+    <h2>Tracking</h2><p>You get an Order ID when you place your order. Use it on the <a href="/track">Track Order</a> page to see when your gift is confirmed, being made, shipped and delivered.</p>
+    <h2>Wrong address</h2><p>Please check the receiver's name, phone number and address. If the address is wrong or the receiver cannot be reached, delivery may be late and extra delivery charges may apply.</p>
+    <h2>Questions</h2><p>${wa()} · ${mail}</p>`);
+  infoPage("/refund-policy", "Policies", "Returns & Refund Policy", "Gift Haveli returns and refund policy for customized and ready-made gifts.", () => `${updated}
+    <h2>Customized gifts</h2><p>Customized gifts are made only for you, with your name, photo or message. Because of this, we cannot take them back or refund them if you change your mind.</p>
+    <h2>Damaged or wrong item</h2><p>If your gift arrives damaged, or it is not what you ordered, message us on ${wa()} as soon as you receive it, with photos of the gift and the packaging. We will check it and remake the item or give you a refund for that item.</p>
+    <h2>Mistakes in your details</h2><p>We print exactly the name, text and photo you send. Please check spelling and photo quality before you order. We cannot remake a gift for free if the mistake was in the details sent to us.</p>
+    <h2>Cancelling an order</h2><p>You can cancel before we start making your gift. Once we have started, we cannot cancel a customized order.</p>
+    <h2>How refunds are paid</h2><p>If a refund is approved, we send it back the same way you paid, or by bank transfer. We will confirm the details with you on WhatsApp.</p>`);
+  infoPage("/privacy-policy", "Policies", "Privacy Policy", "How Gift Haveli collects, uses and protects your personal information and photos.", () => `${updated}
+    <h2>What we collect</h2><p>When you order, we collect your name, WhatsApp number and country, the receiver's name, phone number and address, the delivery date, your gift message, and any photo or text you add to a customized gift.</p>
+    <h2>How we use it</h2><p>We use this information only to make, deliver and support your order, and to talk to you about it on WhatsApp. We do not sell your information.</p>
+    <h2>Your photos</h2><p>Photos you upload are saved privately with your order so we can make your gift. We do not post your photos or your gift on our social media without your permission.</p>
+    <h2>Who we share it with</h2><p>We share the receiver's name, phone number and address only with the delivery company, so they can deliver the gift.</p>
+    <h2>Keeping it safe</h2><p>Order details are kept in our private order records. Only the Gift Haveli team can see them.</p>
+    <h2>Your basket</h2><p>Your basket is saved in your own browser so it is still there when you come back. We do not use advertising cookies on this website.</p>
+    <h2>Your choices</h2><p>You can ask us to show, correct or delete your information at any time: ${wa()} · ${mail}</p>`);
+  infoPage("/terms", "Policies", "Terms & Conditions", "Terms for ordering customized gifts from Gift Haveli.", () => `${updated}
+    <h2>Orders</h2><p>When you place an order, we confirm it with you on WhatsApp. Your order is final once we confirm it with you.</p>
+    <h2>Prices</h2><p>Prices are in Pakistani Rupees (PKR). If a product shows Rs 0000, its price is not set yet and we will tell you the price on WhatsApp before we confirm your order.</p>
+    <h2>Your content</h2><p>You must have the right to use any photo, name or text you send us. We do not print content that is hateful, offensive or that copies someone else's brand or artwork.</p>
+    <h2>Product photos</h2><p>Photos on this website show examples. Every gift is handmade, so colours, flowers and packaging may look a little different.</p>
+    <h2>Flowers</h2><p>We use high-quality artificial flowers so your gift stays beautiful.</p>
+    <h2>Delivery, returns and privacy</h2><p>See our <a href="/shipping-policy">Shipping & Delivery Policy</a>, <a href="/refund-policy">Returns & Refund Policy</a> and <a href="/privacy-policy">Privacy Policy</a>.</p>
+    <h2>Contact</h2><p>${wa()} · ${mail}</p>`);
   pages["/category"] = pages["/customize"]; pages["/box"] = (q, rest) => rest[0] ? pages["/build"](q, rest) : notFound();
   const notFound = () => { meta("Page not found | Gift Haveli", "This page could not be found.", location.pathname); return `<section class="block"><div class="wrap" style="text-align:center"><h1>We couldn't find that page</h1><p class="muted">It may have moved.</p><a class="btn" href="/">Go to home</a></div></section>`; };
   const related = p => { const r = D.products.filter(x => x.cat === p.cat && x.id !== p.id).slice(0, 4);
