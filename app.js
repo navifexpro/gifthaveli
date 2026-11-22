@@ -606,3 +606,6 @@
   updCount(); if (!window.__PRERENDER_ONLY__) { route(false); load(); }
   window.__gh = { route, useCatalog, ready: () => { ready = true; } };
 })();
+
+// footer credit (also fixes older pre-rendered pages)
+(function(){function c(){var f=document.querySelector('.foot-bottom');if(f&&!f.querySelector('.credit')){var t=f.innerHTML;if(t.indexOf('<span')<0)f.innerHTML='<span>'+t+'</span>';var s=document.createElement('span');s.className='credit';s.innerHTML='Created by <a href="https://navifexpro.com" target="_blank" rel="noopener">Navifex Pro</a>';f.appendChild(s);}}if(document.readyState!='loading')c();else document.addEventListener('DOMContentLoaded',c);})();

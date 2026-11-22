@@ -125,7 +125,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--gold)}
 .foot h4{font-family:"Fraunces";color:var(--gold-l);font-weight:500;margin:0 0 10px}
 .foot a{display:block;text-decoration:none;opacity:.85;margin:4px 0}.foot a:hover{opacity:1;color:var(--gold-l)}
 .foot-logo{height:46px;width:auto;margin-bottom:12px}
-.foot-bottom{border-top:1px solid rgba(255,255,255,.1);margin-top:30px;padding-top:16px;font-size:.85rem;opacity:.7}
+.foot-bottom{border-top:1px solid rgba(255,255,255,.1);margin-top:30px;padding-top:16px;font-size:.85rem;opacity:.7;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.foot-bottom .credit a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .toast{visibility:hidden;position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120px);background:var(--ink);color:var(--cream);padding:.8em 1.2em;border-radius:12px;transition:transform .35s;z-index:90}
 .toast.show{visibility:visible;transform:translateX(-50%) translateY(0)}
 @media (max-width:900px){
