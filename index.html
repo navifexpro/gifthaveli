@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gift Haveli — Personalised Gifts, Delivered All Over Pakistan</title>
+<meta name="description" content="Personalised gift boxes, hampers, bouquets, printed mugs, frames and Nikkah keepsakes. Build your own gift box and send it anywhere in Pakistan.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a href="#/" class="brand" aria-label="Gift Haveli home"><img src="logo.svg" alt="Gift Haveli"></a>
+    <nav class="links" id="links">
+      <a href="#/customize">Personalise</a>
+      <a href="#/build">Build a Box</a>
+      <a href="#/finder">Gift Finder</a>
+      <a href="#/corporate">Corporate</a>
+      <a href="#/track">Track Order</a>
+    </nav>
+    <a href="#/cart" class="cart-btn" aria-label="Your gift basket">Basket <span id="cartCount">0</span></a>
+    <button class="menu" id="menuBtn" aria-label="Open menu">☰</button>
+  </div>
+</header>
+
+<main id="app"></main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div>
+      <img src="logo-reverse.svg" alt="Gift Haveli" class="foot-logo">
+      <p class="muted-l">Gifts that feel like home.<br>Delivery all over Pakistan.</p>
+    </div>
+    <div>
+      <h4>Shop</h4>
+      <a href="#/customize">Personalised gifts</a><a href="#/build">Build a box</a><a href="#/finder">Gift finder</a><a href="#/corporate">Corporate gifts</a>
+    </div>
+    <div>
+      <h4>Help</h4>
+      <a href="#/track">Track your order</a><a href="#/faq">Questions</a>
+      <a href="https://wa.me/923130111349" target="_blank" rel="noopener">WhatsApp 0313-0111349</a>
+      <a href="mailto:thegifthaveli@gmail.com">thegifthaveli@gmail.com</a>
+    </div>
+  </div>
+  <div class="wrap foot-bottom">© Gift Haveli · @gifthaveli</div>
+</footer>
+
+<!-- Chat -->
+<button class="chat-fab" id="chatFab" aria-label="Chat with us">Need help?</button>
+<section class="chat" id="chat" hidden>
+  <div class="chat-head"><strong>Gift Haveli</strong><span>Usually replies in a minute</span><button id="chatClose" aria-label="Close chat">×</button></div>
+  <div class="chat-body" id="chatBody"></div>
+  <form class="chat-form" id="chatForm"><input id="chatInput" placeholder="Ask about gifts, prices, delivery…" autocomplete="off"><button>Send</button></form>
+</section>
+
+<div class="toast" id="toast"></div>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
