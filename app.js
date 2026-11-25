@@ -117,6 +117,29 @@
           <a class="big-cat" href="/customize"><img src="/p/g/GH-062-5.jpg" alt="Customized 3D illusion lamp with a name" loading="lazy" style="object-position:center 15%"><span><b>Customized Gifts</b><small>Add a name, a photo or a few words</small></span></a>
         </div>
       </div></section>
+      <section class="block" style="padding-top:0"><div class="wrap">
+        <p class="eyebrow">Gift boxes</p><h2>Ready-made gift boxes</h2>
+        <p class="muted" style="max-width:60ch">Complete gift boxes, already put together. Nothing to choose — just order and we deliver. Or build your own box.</p>
+        <div class="grid prods" style="margin-top:26px">${ready || D.products.length ? readyList().map(rCard).join("") : loading()}</div>
+        <p style="margin-top:22px"><a class="btn" href="/build">Build your own box</a></p>
+      </div></section>
+      <section class="block" style="padding-top:0"><div class="wrap split">
+        <img src="/hero-bouquet.jpg" alt="Red rose and chocolate bouquet wrapped in maroon and cream paper" loading="lazy">
+        <div><p class="eyebrow">Build a box</p><h2>Make it entirely theirs</h2>
+          <ol class="steps"><li><div><b>Pick a box</b><br><span class="muted">Heart, square, suit or cube.</span></div></li>
+          <li><div><b>Fill it</b><br><span class="muted">Eatables, flowers, perfumes and customized items.</span></div></li>
+          <li><div><b>Make it personal</b><br><span class="muted">A name, a photo, a message card.</span></div></li>
+          <li><div><b>We deliver</b><br><span class="muted">Anywhere in Pakistan.</span></div></li></ol>
+          <a class="btn" href="/build">Start building</a></div>
+      </div></section>
+      <section class="block band"><div class="wrap">
+        <p class="eyebrow">From anywhere to home</p><h2>Far from family? We'll take it home for you.</h2>
+        <p style="max-width:60ch">Living in the UK, USA, Gulf or anywhere else — order online and we deliver your gift to your loved ones in Pakistan, with your message inside.</p>
+        <div class="grid three" style="margin-top:28px">
+          <div class="card"><h3>Delivery all over Pakistan</h3><p>${freeLine()}</p></div>
+          <div class="card"><h3>Keep it a surprise</h3><p>Tick "keep sender secret" and we won't reveal who sent it.</p></div>
+          <div class="card"><h3>Track every step</h3><p>Use your Order ID to see when it's made, shipped and delivered.</p></div>
+        </div></div></section>
 `;
     },
 
