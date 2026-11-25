@@ -69,7 +69,7 @@
     <span class="tag">${esc(tag || p.cat || customLabel(p.custom))}</span><h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>
     <span class="btn sm" style="margin-top:auto">${p.custom === "none" ? "View" : "Customize"}</span></div></a>`;
   const rCard = r => `<a class="prod" href="${rUrl(r)}"><div class="ph">${r.gallery && r.gallery[0] ? `<img src="${src(r.gallery[0])}" alt="${esc(r.name)} gift box" loading="lazy">` : boxSvg(byId(r.box), r.items)}</div><div class="in">
-    <span class="tag">Ready-made box</span><h3>${esc(r.name)}</h3><p class="muted" style="font-size:.88rem;margin:0">${esc(rParts(r).map(x => x.name).join(", "))}</p>
+    <span class="tag">Gift box</span><h3>${esc(r.name)}</h3><p class="muted" style="font-size:.88rem;margin:0">${esc(rParts(r).map(x => x.name).join(", "))}</p>
     <span class="price">${rTotal(r) ? rs(rTotal(r)) : "Rs 0000"}</span><span class="btn sm" style="margin-top:auto">View box</span></div></a>`;
   const loading = () => `<p class="muted">${loadErr || "Loading…"}</p>`;
 
@@ -99,7 +99,7 @@
   const pages = {
     "/": () => {
       meta("Gift Haveli — Personalised Gifts & Gift Boxes, Delivered All Over Pakistan",
-        "Ready-made gift boxes, build your own gift box, and customized mugs, frames, lamps and Nikkah gifts. Delivery anywhere in Pakistan — overseas Pakistanis welcome.", "/",
+        "Gift boxes, make your own gift box, and customized mugs, frames, lamps and Nikkah gifts. Delivery anywhere in Pakistan — overseas Pakistanis welcome.", "/",
         { "@context": "https://schema.org", "@type": "WebSite", name: "Gift Haveli", url: SITE + "/" });
       const featured = D.products.filter(p => /hamper|box|bouquet|basket/i.test(p.cat));
       return `
@@ -113,12 +113,12 @@
       </section>
       <section class="block"><div class="wrap">
         <div class="two-cats">
-          <a class="big-cat" href="/boxes"><img src="/hero-hamper.jpg" alt="Premium gift box with gold ribbon" loading="lazy"><span><b>Gift Boxes</b><small>Ready-made boxes, or make your own</small></span></a>
+          <a class="big-cat" href="/boxes"><img src="/hero-hamper.jpg" alt="Premium gift box with gold ribbon" loading="lazy"><span><b>Gift Boxes</b><small>Pick a box, or make your own</small></span></a>
           <a class="big-cat" href="/customize"><img src="/p/g/GH-062-5.jpg" alt="Customized 3D illusion lamp with a name" loading="lazy" style="object-position:center 15%"><span><b>Customized Gifts</b><small>Add a name, a photo or a few words</small></span></a>
         </div>
       </div></section>
       <section class="block" style="padding-top:0"><div class="wrap">
-        <p class="eyebrow">Gift boxes</p><h2>Ready-made gift boxes</h2>
+        <p class="eyebrow">Ready to order</p><h2>Gift Boxes</h2>
         <p class="muted" style="max-width:60ch">Complete gift boxes, already put together. Nothing to choose — just order and we deliver. Or build your own box.</p>
         <div class="grid prods" style="margin-top:26px">${ready || D.products.length ? readyList().map(rCard).join("") : loading()}</div>
         <p style="margin-top:22px"><a class="btn" href="/build">Build your own box</a></p>
@@ -193,23 +193,23 @@
 
     "/ready": (q, rest) => {
       if (!rest[0]) {
-        meta("Ready-Made Gift Boxes — Delivered All Over Pakistan | Gift Haveli", "Complete gift boxes, already put together. Pick one and we deliver it anywhere in Pakistan.", "/boxes",
-          { "@context": "https://schema.org", "@graph": [crumbs([["Home", "/"], ["Ready-made boxes", "/boxes"]])] });
-        return `<section class="page-head"><div class="wrap"><p class="eyebrow">Ready-made boxes</p><h1>Ready-made gift boxes</h1><p class="muted">Complete gift boxes, already put together. Nothing to choose — just order and we deliver.</p></div></section>
+        meta("Gift Boxes — Delivered All Over Pakistan | Gift Haveli", "Complete gift boxes, already put together. Pick one and we deliver it anywhere in Pakistan.", "/boxes",
+          { "@context": "https://schema.org", "@graph": [crumbs([["Home", "/"], ["Gift Boxes", "/boxes"]])] });
+        return `<section class="page-head"><div class="wrap"><p class="eyebrow">Ready to order</p><h1>Gift Boxes</h1><p class="muted">Complete gift boxes, already put together. Nothing to choose — just order and we deliver.</p></div></section>
         <section style="padding-bottom:70px"><div class="wrap"><div class="grid prods">${readyList().length ? readyList().map(rCard).join("") : loading()}</div>
         <p style="margin-top:26px"><a class="btn" href="/build">Or make your own box</a></p></div></section>`;
       }
       const r = readyList().find(x => slug(x.name) === rest[0]);
       if (!r) return ready ? notFound() : `<section class="page-head"><div class="wrap">${loading()}</div></section>`;
       const box = byId(r.box), parts = rParts(r), url = rUrl(r), t = rTotal(r);
-      meta(`${r.name} Gift Box — Ready-Made Gift | Gift Haveli Pakistan`, (r.desc || `${r.name} gift box with ${parts.map(x => x.name).join(", ")}.`).slice(0, 155), url,
-        { "@context": "https://schema.org", "@graph": [{ "@type": "Product", name: r.name + " Gift Box", sku: r.id, description: r.desc, brand: { "@type": "Brand", name: "Gift Haveli" }, image: (r.gallery || []).map(g => SITE + src(g)) }, crumbs([["Home", "/"], ["Ready-made boxes", "/boxes"], [r.name, url]])] }, r.gallery && r.gallery[0] ? src(r.gallery[0]) : "");
+      meta(`${r.name} Gift Box | Gift Haveli Pakistan`, (r.desc || `${r.name} gift box with ${parts.map(x => x.name).join(", ")}.`).slice(0, 155), url,
+        { "@context": "https://schema.org", "@graph": [{ "@type": "Product", name: r.name + " Gift Box", sku: r.id, description: r.desc, brand: { "@type": "Brand", name: "Gift Haveli" }, image: (r.gallery || []).map(g => SITE + src(g)) }, crumbs([["Home", "/"], ["Gift Boxes", "/boxes"], [r.name, url]])] }, r.gallery && r.gallery[0] ? src(r.gallery[0]) : "");
       const g = r.gallery || [];
-      return `<section class="pdp"><div class="wrap"><nav class="crumbs"><a href="/">Home</a> / <a href="/boxes">Ready-made boxes</a></nav>
+      return `<section class="pdp"><div class="wrap"><nav class="crumbs"><a href="/">Home</a> / <a href="/boxes">Gift Boxes</a></nav>
         <div class="pdp-grid">
           <div class="gal"><div class="gal-main">${g.length ? `<img id="galMain" src="${src(g[0], 1200)}" alt="${esc(r.name)} gift box with items inside">` : boxSvg(box, r.items)}</div>
             <div class="gal-thumbs">${g.map((x, i) => `<button class="${i ? "" : "on"}" data-g="${esc(src(x, 1200))}"><img src="${src(x, 300)}" alt="" loading="lazy"></button>`).join("")}</div></div>
-          <div class="pdp-info"><span class="tag">Ready-made box</span><h1>${esc(r.name)}</h1><p class="price big">${t ? rs(t) : "Rs 0000"}</p>
+          <div class="pdp-info"><span class="tag">Gift box</span><h1>${esc(r.name)}</h1><p class="price big">${t ? rs(t) : "Rs 0000"}</p>
             <p>${esc(r.desc || "")}</p>
             <h3 style="margin-top:18px">What's inside</h3>
             <div class="inside">${[box, ...parts].map(x => `<a href="${pUrl(x)}">${pic(x, x.icon || catIcon(x.cat))}<span>${esc(x.name)}</span></a>`).join("")}</div>
