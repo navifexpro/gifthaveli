@@ -112,12 +112,6 @@
         </div>
       </section>
       <section class="block"><div class="wrap">
-        <div class="two-cats">
-          <a class="big-cat" href="/boxes"><img src="/hero-hamper.jpg" alt="Premium gift box with gold ribbon" loading="lazy"><span><b>Gift Boxes</b><small>Pick a box, or make your own</small></span></a>
-          <a class="big-cat" href="/customize"><img src="/p/g/GH-062-5.jpg" alt="Customized 3D illusion lamp with a name" loading="lazy" style="object-position:center 15%"><span><b>Customized Gifts</b><small>Add a name, a photo or a few words</small></span></a>
-        </div>
-      </div></section>
-      <section class="block" style="padding-top:0"><div class="wrap">
         <p class="eyebrow">Ready to order</p><h2>Gift Boxes</h2>
         <p class="muted" style="max-width:60ch">Complete gift boxes, already put together. Nothing to choose — just order and we deliver. Or build your own box.</p>
         <div class="grid prods" style="margin-top:26px">${ready || D.products.length ? readyList().map(rCard).join("") : loading()}</div>
@@ -131,6 +125,12 @@
           <li><div><b>Make it personal</b><br><span class="muted">A name, a photo, a message card.</span></div></li>
           <li><div><b>We deliver</b><br><span class="muted">Anywhere in Pakistan.</span></div></li></ol>
           <a class="btn" href="/build">Start building</a></div>
+      </div></section>
+      <section class="block" style="padding-top:0"><div class="wrap">
+        <div class="two-cats">
+          <a class="big-cat" href="/boxes"><img src="/hero-hamper.jpg" alt="Premium gift box with gold ribbon" loading="lazy"><span><b>Gift Boxes</b><small>Pick a box, or make your own</small></span></a>
+          <a class="big-cat" href="/customize"><img src="/p/g/GH-062-5.jpg" alt="Customized 3D illusion lamp with a name" loading="lazy" style="object-position:center 15%"><span><b>Customized Gifts</b><small>Add a name, a photo or a few words</small></span></a>
+        </div>
       </div></section>
       <section class="block band"><div class="wrap">
         <p class="eyebrow">From anywhere to home</p><h2>Far from family? We'll take it home for you.</h2>
