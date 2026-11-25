@@ -184,7 +184,7 @@
               <canvas id="cv" width="800" height="800" aria-label="Preview of your customized ${esc(p.name)}"></canvas>
               <p class="muted" style="font-size:.82rem;margin-top:6px">Preview only. The Gift Haveli mark is not printed on your gift.</p></div>` : ""}
             <div class="actions" style="margin-top:16px"><button class="btn" id="addP">Add to basket</button>
-              <a class="btn ghost" target="_blank" rel="noopener" id="waP" href="${askWa(`Assalam o Alaikum, I want to order ${p.name} (${p.id}).`)}">Order on WhatsApp</a></div>
+              <a class="btn ghost" target="_blank" rel="noopener" id="waP" href="${askWa(`Assalam o Alaikum Gift Haveli 🎁, I want to order ${p.name} (${p.id}).`)}">Order on WhatsApp</a></div>
             <ul class="perks"><li>Delivery all over Pakistan</li><li>Overseas orders welcome</li><li>Preview before you order</li></ul>
           </div></div>
         ${related(p)}
@@ -298,7 +298,7 @@
       return `<section class="page-head"><div class="wrap"><p class="eyebrow">Corporate gifting</p><h1>Gifts your team and clients remember</h1></div></section>
       <section style="padding-bottom:80px"><div class="wrap split"><img src="/hero-hamper.jpg" alt="Premium cream gift hamper with gold ribbon" style="aspect-ratio:4/3">
       <div><ul class="steps"><li>Eid and festive hampers for staff</li><li>Client gifts with your logo on mugs, pens and boxes</li><li>Wooden shields and awards</li><li>Delivery to many addresses across Pakistan</li></ul>
-      <a class="btn" href="${askWa("Assalam o Alaikum, I want to discuss corporate / bulk gifts.")}" target="_blank" rel="noopener">Talk to us on WhatsApp</a></div></div></section>`; },
+      <a class="btn" href="${askWa("Assalam o Alaikum Gift Haveli 🎁, I want to discuss bulk gifts.")}" target="_blank" rel="noopener">Talk to us on WhatsApp</a></div></div></section>`; },
 
     "/faq": () => {
       const qa = [["Where do you deliver?", "All over Pakistan."], ["How much is delivery?", freeLine()], ["I live abroad. Can I order?", "Yes. Order here and we deliver to your family in Pakistan."],
@@ -313,18 +313,18 @@
   /* ---------- info & policy pages ---------- */
   const infoPage = (key, eyebrow, title, desc, body) => { pages[key] = () => { meta(title + " | Gift Haveli", desc, key, { "@context": "https://schema.org", "@graph": [{ "@type": "WebPage", name: title }, crumbs([["Home", "/"], [title, key]])] });
     return `<section class="page-head"><div class="wrap"><p class="eyebrow">${eyebrow}</p><h1>${title}</h1></div></section><section style="padding-bottom:80px"><div class="wrap prose">${body()}</div></section>`; }; };
-  const wa = () => `<a href="https://wa.me/${D.whatsapp}" target="_blank" rel="noopener">WhatsApp 0313-0111349</a>`;
+  const wa = () => `<a href="${askWa("Assalam o Alaikum Gift Haveli 🎁, I want to order a gift.")}" target="_blank" rel="noopener">WhatsApp 0313-0111349</a>`;
   const mail = `<a href="mailto:thegifthaveli@gmail.com">thegifthaveli@gmail.com</a>`;
   const updated = `<p class="muted" style="font-size:.85rem">Last updated: 22 November 2026</p>`;
-  infoPage("/about", "Our story", "About Gift Haveli", "Gift Haveli makes customized gifts, gift boxes, hampers and bouquets in Lahore and delivers them all over Pakistan.", () => `
-    <p>Gift Haveli is a Lahore-based gift shop. We make customized gifts — gift boxes, hampers, chocolate bouquets, printed mugs, photo frames, lamps, jewellery and Nikkah keepsakes — and deliver them all over Pakistan.</p>
+  infoPage("/about", "Our story", "About Gift Haveli", "Gift Haveli, a Navifex Pro brand, makes gift boxes and customized gifts in Lahore and delivers them all over Pakistan.", () => `
+    <p>Gift Haveli is a Lahore-based gift shop and a brand of <a href="https://navifexpro.com" target="_blank" rel="noopener">Navifex Pro</a>. We make gift boxes and customized gifts — printed mugs, photo frames, lamps, jewellery and Nikkah keepsakes — and deliver them all over Pakistan.</p>
     <p>Every gift is made for one person. You choose the gift, add a name, a photo or a message, and we put it together by hand.</p>
     <p>Many of our customers live abroad. You can order here from anywhere and we deliver your gift to your family in Pakistan, with your message inside.</p>
     <h2>Talk to us</h2><p>${wa()} · ${mail}</p>`);
   infoPage("/contact", "Contact", "Contact Us", "Contact Gift Haveli on WhatsApp 0313-0111349 or email thegifthaveli@gmail.com for orders, bulk and corporate gifts.", () => `
     <div class="grid two" style="gap:20px"><div class="card"><h3>WhatsApp</h3><p>The fastest way to reach us for orders, prices and order updates.</p><p>${wa()}</p></div>
     <div class="card"><h3>Email</h3><p>For corporate and bulk orders, or anything else.</p><p>${mail}</p></div></div>
-    <p style="margin-top:20px">Based in Lahore · Delivery all over Pakistan.</p>`);
+    <p style="margin-top:20px">Based in Lahore · Delivery all over Pakistan.</p><p class="muted">Gift Haveli is a Navifex Pro brand, so our WhatsApp shows the name Navifex Pro. You are in the right place.</p>`);
   infoPage("/shipping-policy", "Policies", "Shipping & Delivery Policy", "Gift Haveli delivers all over Pakistan. Delivery charges, delivery dates and order tracking explained.", () => `${updated}
     <h2>Where we deliver</h2><p>We deliver all over Pakistan. We do not deliver outside Pakistan, but you can order from anywhere in the world for someone in Pakistan.</p>
     <h2>Delivery charges</h2><p>Delivery is ${freeLine()} The delivery charge is shown in your basket before you place the order.</p>
@@ -400,7 +400,7 @@
       r.onload = () => { const i = new Image(); i.onload = () => { img = i; photo = shrink(i); $("#pw").textContent = (i.width < 800 || i.height < 800) ? "This photo is small and may print blurry. A bigger photo will look better." : ""; draw(); }; i.src = r.result; };
       r.readAsDataURL(f);
     };
-    const waLink = () => { const w = $("#waP"); if (w) w.href = askWa(`Assalam o Alaikum, I want to order ${p.name} (${p.id}).${getT() ? `\nText: ${getT()}` : ""}${photo ? "\nI will send my photo here." : ""}`); };
+    const waLink = () => { const w = $("#waP"); if (w) w.href = askWa(`Assalam o Alaikum Gift Haveli 🎁, I want to order ${p.name} (${p.id}).${getT() ? `\nText: ${getT()}` : ""}${photo ? "\nI will send my photo here." : ""}`); };
     $("#addP").onclick = () => {
       const t = getT();
       if (p.custom === "photo" && !photo) return toast("Please upload a photo first");
@@ -523,7 +523,7 @@
     try {
       const j = await (await fetch(D.api, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(body) })).json();
       if (!j.ok) throw new Error(j.error || "Order failed");
-      lastWa = `https://wa.me/${j.whatsapp || D.whatsapp}?text=${encodeURIComponent(j.message)}`;
+      lastWa = `https://wa.me/${j.whatsapp || D.whatsapp}?text=${encodeURIComponent((/Gift Haveli/.test(j.message) ? '' : 'Gift Haveli 🎁 ') + j.message)}`;
       store.set([]); Object.keys(photos).forEach(k => delete photos[k]);
       go(`/thanks?id=${encodeURIComponent(j.id)}`);
       setTimeout(() => { location.href = lastWa; }, 1800);
@@ -617,4 +617,4 @@
 })();
 
 // footer credit (also fixes older pre-rendered pages)
-(function(){function c(){var f=document.querySelector('.foot-bottom');if(f&&!f.querySelector('.credit')){var t=f.innerHTML;if(t.indexOf('<span')<0)f.innerHTML='<span>'+t+'</span>';var s=document.createElement('span');s.className='credit';s.innerHTML='Created by <a href="https://navifexpro.com" target="_blank" rel="noopener">Navifex Pro</a>';f.appendChild(s);}}if(document.readyState!='loading')c();else document.addEventListener('DOMContentLoaded',c);})();
+(function(){function c(){var f=document.querySelector('.foot-bottom');if(f&&!f.querySelector('.credit')){var t=f.innerHTML;if(t.indexOf('<span')<0)f.innerHTML='<span>'+t+'</span>';var s=document.createElement('span');s.className='credit';s.innerHTML='A <a href="https://navifexpro.com" target="_blank" rel="noopener">Navifex Pro</a> brand';f.appendChild(s);}}if(document.readyState!='loading')c();else document.addEventListener('DOMContentLoaded',c);})();
