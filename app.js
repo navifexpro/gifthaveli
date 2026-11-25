@@ -69,7 +69,7 @@
     <span class="tag">${esc(tag || p.cat || customLabel(p.custom))}</span><h3>${esc(p.name)}</h3><span class="price">${price(p)}</span>
     <span class="btn sm" style="margin-top:auto">${p.custom === "none" ? "View" : "Customize"}</span></div></a>`;
   const rCard = r => `<a class="prod" href="${rUrl(r)}"><div class="ph">${r.gallery && r.gallery[0] ? `<img src="${src(r.gallery[0])}" alt="${esc(r.name)} gift box" loading="lazy">` : boxSvg(byId(r.box), r.items)}</div><div class="in">
-    <span class="tag">Gift box</span><h3>${esc(r.name)}</h3><p class="muted" style="font-size:.88rem;margin:0">${esc(rParts(r).map(x => x.name).join(", "))}</p>
+    <span class="tag">Gift box</span><h3>${esc(r.name)}</h3><p class="muted" style="font-size:.88rem;margin:0">${esc(rParts(r).length ? rParts(r).map(x => x.name).join(", ") : (r.desc || ""))}</p>
     <span class="price">${rTotal(r) ? rs(rTotal(r)) : "Rs 0000"}</span><span class="btn sm" style="margin-top:auto">View box</span></div></a>`;
   const loading = () => `<p class="muted">${loadErr || "Loading…"}</p>`;
 
@@ -211,8 +211,8 @@
             <div class="gal-thumbs">${g.map((x, i) => `<button class="${i ? "" : "on"}" data-g="${esc(src(x, 1200))}"><img src="${src(x, 300)}" alt="" loading="lazy"></button>`).join("")}</div></div>
           <div class="pdp-info"><span class="tag">Gift box</span><h1>${esc(r.name)}</h1><p class="price big">${t ? rs(t) : "Rs 0000"}</p>
             <p>${esc(r.desc || "")}</p>
-            <h3 style="margin-top:18px">What's inside</h3>
-            <div class="inside">${[box, ...parts].map(x => `<a href="${pUrl(x)}">${pic(x, x.icon || catIcon(x.cat))}<span>${esc(x.name)}</span></a>`).join("")}</div>
+            ${parts.length ? `<h3 style="margin-top:18px">What's inside</h3>
+            <div class="inside">${[box, ...parts].map(x => `<a href="${pUrl(x)}">${pic(x, x.icon || catIcon(x.cat))}<span>${esc(x.name)}</span></a>`).join("")}</div>` : ""}
             <div class="field" style="margin-top:14px"><label for="rbText">Message for the card (optional)</label><input id="rbText" maxlength="60" placeholder="e.g. Happy Birthday Ammi"></div>
             <div class="actions"><button class="btn" id="addR" data-r="${esc(r.id)}">Add to basket</button><a class="btn ghost" href="/box/${pslug(box)}?from=${esc(r.id)}">Change items</a></div>
           </div></div></div></section>`;
