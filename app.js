@@ -112,32 +112,11 @@
         </div>
       </section>
       <section class="block"><div class="wrap">
-        <p class="eyebrow">Gift boxes</p><h2>Ready-made gift boxes</h2>
-        <p class="muted" style="max-width:60ch">Complete gift boxes, already put together. Nothing to choose — just order and we deliver. Or build your own box.</p>
-        <div class="grid prods" style="margin-top:26px">${ready || D.products.length ? readyList().map(rCard).join("") : loading()}</div>
-        <p style="margin-top:22px"><a class="btn" href="/build">Build your own box</a></p>
+        <div class="two-cats">
+          <a class="big-cat" href="/boxes"><img src="/hero-hamper.jpg" alt="Premium gift box with gold ribbon" loading="lazy"><span><b>Gift Boxes</b><small>Ready-made boxes, or make your own</small></span></a>
+          <a class="big-cat" href="/customize"><img src="/p/g/GH-062-5.jpg" alt="Customized 3D illusion lamp with a name" loading="lazy" style="object-position:center 15%"><span><b>Customized Gifts</b><small>Add a name, a photo or a few words</small></span></a>
+        </div>
       </div></section>
-      <section class="block" style="padding-top:0"><div class="wrap">
-        <p class="eyebrow">Customized gifts</p><h2>Add their name or photo</h2>
-        <div class="grid cats" style="margin-top:26px">${D.categories.length ? D.categories.map(c => `<a class="cat" href="/category/${c.id}">${icon(c.icon)}<b>${esc(c.name)}</b></a>`).join("") : loading()}</div>
-      </div></section>
-      <section class="block" style="padding-top:0"><div class="wrap split">
-        <img src="/hero-bouquet.jpg" alt="Red rose and chocolate bouquet wrapped in maroon and cream paper" loading="lazy">
-        <div><p class="eyebrow">Build a box</p><h2>Make it entirely theirs</h2>
-          <ol class="steps"><li><div><b>Pick a box</b><br><span class="muted">Heart, square, suit or cube.</span></div></li>
-          <li><div><b>Fill it</b><br><span class="muted">Eatables, flowers, perfumes and customized items.</span></div></li>
-          <li><div><b>Make it personal</b><br><span class="muted">A name, a photo, a message card.</span></div></li>
-          <li><div><b>We deliver</b><br><span class="muted">Anywhere in Pakistan.</span></div></li></ol>
-          <a class="btn" href="/build">Start building</a></div>
-      </div></section>
-      <section class="block band"><div class="wrap">
-        <p class="eyebrow">From anywhere to home</p><h2>Far from family? We'll take it home for you.</h2>
-        <p style="max-width:60ch">Living in the UK, USA, Gulf or anywhere else — order online and we deliver your gift to your loved ones in Pakistan, with your message inside.</p>
-        <div class="grid three" style="margin-top:28px">
-          <div class="card"><h3>Delivery all over Pakistan</h3><p>${freeLine()}</p></div>
-          <div class="card"><h3>Keep it a surprise</h3><p>Tick "keep sender secret" and we won't reveal who sent it.</p></div>
-          <div class="card"><h3>Track every step</h3><p>Use your Order ID to see when it's made, shipped and delivered.</p></div>
-        </div></div></section>
 `;
     },
 
@@ -190,13 +169,20 @@
     },
 
     "/ready": (q, rest) => {
+      if (!rest[0]) {
+        meta("Ready-Made Gift Boxes — Delivered All Over Pakistan | Gift Haveli", "Complete gift boxes, already put together. Pick one and we deliver it anywhere in Pakistan.", "/boxes",
+          { "@context": "https://schema.org", "@graph": [crumbs([["Home", "/"], ["Ready-made boxes", "/boxes"]])] });
+        return `<section class="page-head"><div class="wrap"><p class="eyebrow">Ready-made boxes</p><h1>Ready-made gift boxes</h1><p class="muted">Complete gift boxes, already put together. Nothing to choose — just order and we deliver.</p></div></section>
+        <section style="padding-bottom:70px"><div class="wrap"><div class="grid prods">${readyList().length ? readyList().map(rCard).join("") : loading()}</div>
+        <p style="margin-top:26px"><a class="btn" href="/build">Or make your own box</a></p></div></section>`;
+      }
       const r = readyList().find(x => slug(x.name) === rest[0]);
       if (!r) return ready ? notFound() : `<section class="page-head"><div class="wrap">${loading()}</div></section>`;
       const box = byId(r.box), parts = rParts(r), url = rUrl(r), t = rTotal(r);
       meta(`${r.name} Gift Box — Ready-Made Gift | Gift Haveli Pakistan`, (r.desc || `${r.name} gift box with ${parts.map(x => x.name).join(", ")}.`).slice(0, 155), url,
-        { "@context": "https://schema.org", "@graph": [{ "@type": "Product", name: r.name + " Gift Box", sku: r.id, description: r.desc, brand: { "@type": "Brand", name: "Gift Haveli" }, image: (r.gallery || []).map(g => SITE + src(g)) }, crumbs([["Home", "/"], ["Ready-made boxes", "/"], [r.name, url]])] }, r.gallery && r.gallery[0] ? src(r.gallery[0]) : "");
+        { "@context": "https://schema.org", "@graph": [{ "@type": "Product", name: r.name + " Gift Box", sku: r.id, description: r.desc, brand: { "@type": "Brand", name: "Gift Haveli" }, image: (r.gallery || []).map(g => SITE + src(g)) }, crumbs([["Home", "/"], ["Ready-made boxes", "/boxes"], [r.name, url]])] }, r.gallery && r.gallery[0] ? src(r.gallery[0]) : "");
       const g = r.gallery || [];
-      return `<section class="pdp"><div class="wrap"><nav class="crumbs"><a href="/">Home</a> / Ready-made boxes</nav>
+      return `<section class="pdp"><div class="wrap"><nav class="crumbs"><a href="/">Home</a> / <a href="/boxes">Ready-made boxes</a></nav>
         <div class="pdp-grid">
           <div class="gal"><div class="gal-main">${g.length ? `<img id="galMain" src="${src(g[0], 1200)}" alt="${esc(r.name)} gift box with items inside">` : boxSvg(box, r.items)}</div>
             <div class="gal-thumbs">${g.map((x, i) => `<button class="${i ? "" : "on"}" data-g="${esc(src(x, 1200))}"><img src="${src(x, 300)}" alt="" loading="lazy"></button>`).join("")}</div></div>
@@ -211,9 +197,9 @@
 
     "/build": (q, rest) => {
       if (!rest[0]) {
-        meta("Build Your Own Gift Box — Customized Gift Boxes in Pakistan | Gift Haveli", "Pick a gift box, fill it with chocolates, flowers, perfumes and customized items, add a message, and we deliver all over Pakistan.", "/build",
+        meta("Make Your Own Gift Box — Customized Gift Boxes in Pakistan | Gift Haveli", "Pick a gift box, fill it with chocolates, flowers, perfumes and customized items, add a message, and we deliver all over Pakistan.", "/build",
           { "@context": "https://schema.org", "@graph": [crumbs([["Home", "/"], ["Build a box", "/build"]])] });
-        return `<section class="page-head"><div class="wrap"><p class="eyebrow">Build a box · Step 1</p><h1>Choose your box</h1><p class="muted">Pick a box. Next, you fill it with the things they love.</p></div></section>
+        return `<section class="page-head"><div class="wrap"><p class="eyebrow">Make your box · Step 1</p><h1>Choose your box</h1><p class="muted">Pick a box. Next, you fill it with the things they love.</p></div></section>
         <section style="padding-bottom:70px"><div class="wrap"><div class="grid prods">${D.boxes.length ? D.boxes.map(b => `<a class="prod" href="${bUrl(b)}"><div class="ph">${pic(b, "box")}</div><div class="in"><span class="tag">${esc(b.size ? b.size + " in" : "Gift box")} · up to ${b.slots} items</span><h3>${esc(b.name)}</h3><span class="price">${price(b)}</span><span class="btn sm" style="margin-top:auto">Choose this box</span></div></a>`).join("") : loading()}</div></div></section>`;
       }
       const box = D.boxes.find(b => pslug(b) === rest[0]);
@@ -345,7 +331,7 @@
     <h2>Flowers</h2><p>We use high-quality artificial flowers so your gift stays beautiful.</p>
     <h2>Delivery, returns and privacy</h2><p>See our <a href="/shipping-policy">Shipping & Delivery Policy</a>, <a href="/refund-policy">Returns & Refund Policy</a> and <a href="/privacy-policy">Privacy Policy</a>.</p>
     <h2>Contact</h2><p>${wa()} · ${mail}</p>`);
-  pages["/category"] = pages["/customize"]; pages["/box"] = (q, rest) => rest[0] ? pages["/build"](q, rest) : notFound();
+  pages["/category"] = pages["/customize"]; pages["/boxes"] = q => pages["/ready"](q, []); pages["/box"] = (q, rest) => rest[0] ? pages["/build"](q, rest) : notFound();
   const notFound = () => { meta("Page not found | Gift Haveli", "This page could not be found.", location.pathname); return `<section class="block"><div class="wrap" style="text-align:center"><h1>We couldn't find that page</h1><p class="muted">It may have moved.</p><a class="btn" href="/">Go to home</a></div></section>`; };
   const related = p => { const r = D.products.filter(x => x.cat === p.cat && x.id !== p.id).slice(0, 4);
     return r.length ? `<div style="margin-top:56px"><h2>More ${esc(p.cat || "gifts")}</h2><div class="grid prods" style="margin-top:18px">${r.map(x => card(x)).join("")}</div></div>` : ""; };
@@ -359,7 +345,7 @@
     const q = new URLSearchParams(location.search), parts = path.split("/").filter(Boolean);
     const key = parts.length ? "/" + parts[0] : "/", rest = parts.slice(1);
     app.innerHTML = (pages[key] || notFound)(q, rest);
-    document.querySelectorAll(".links a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === key || (key === "/category" && a.getAttribute("href") === "/customize") || (key === "/box" && a.getAttribute("href") === "/build")));
+    document.querySelectorAll(".links a").forEach(a => a.classList.toggle("on", a.getAttribute("href") === key || (key === "/category" && a.getAttribute("href") === "/customize") || (key === "/box" && a.getAttribute("href") === "/build") || ((key === "/ready" || key === "/boxes") && a.getAttribute("href") === "/boxes")));
     $("#links").classList.remove("open");
     if (push !== false) window.scrollTo(0, 0);
     if (key === "/box" && rest[0]) initBuilder(q.get("from"));
