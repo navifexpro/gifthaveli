@@ -99,7 +99,7 @@
   const pages = {
     "/": () => {
       meta("Gift Haveli — Personalised Gifts & Gift Boxes, Delivered All Over Pakistan",
-        "Customized gift boxes, hampers, chocolate bouquets, photo mugs, frames, lamps and Nikkah gifts. Build your own gift box and send it anywhere in Pakistan — overseas Pakistanis welcome.", "/",
+        "Ready-made gift boxes, build your own gift box, and customized mugs, frames, lamps and Nikkah gifts. Delivery anywhere in Pakistan — overseas Pakistanis welcome.", "/",
         { "@context": "https://schema.org", "@type": "WebSite", name: "Gift Haveli", url: SITE + "/" });
       const featured = D.products.filter(p => /hamper|box|bouquet|basket/i.test(p.cat));
       return `
@@ -112,12 +112,13 @@
         </div>
       </section>
       <section class="block"><div class="wrap">
-        <p class="eyebrow">Ready to gift</p><h2>Ready-made boxes, hampers & bouquets</h2>
-        <p class="muted" style="max-width:60ch">Complete gifts, already put together. Nothing to choose — just order and we deliver.</p>
-        <div class="grid prods" style="margin-top:26px">${ready || D.products.length ? [...readyList().map(rCard), ...featured.map(p => card(p))].join("") : loading()}</div>
+        <p class="eyebrow">Gift boxes</p><h2>Ready-made gift boxes</h2>
+        <p class="muted" style="max-width:60ch">Complete gift boxes, already put together. Nothing to choose — just order and we deliver. Or build your own box.</p>
+        <div class="grid prods" style="margin-top:26px">${ready || D.products.length ? readyList().map(rCard).join("") : loading()}</div>
+        <p style="margin-top:22px"><a class="btn" href="/build">Build your own box</a></p>
       </div></section>
       <section class="block" style="padding-top:0"><div class="wrap">
-        <p class="eyebrow">Shop by category</p><h2>Something for every someone</h2>
+        <p class="eyebrow">Customized gifts</p><h2>Add their name or photo</h2>
         <div class="grid cats" style="margin-top:26px">${D.categories.length ? D.categories.map(c => `<a class="cat" href="/category/${c.id}">${icon(c.icon)}<b>${esc(c.name)}</b></a>`).join("") : loading()}</div>
       </div></section>
       <section class="block" style="padding-top:0"><div class="wrap split">
@@ -137,10 +138,7 @@
           <div class="card"><h3>Keep it a surprise</h3><p>Tick "keep sender secret" and we won't reveal who sent it.</p></div>
           <div class="card"><h3>Track every step</h3><p>Use your Order ID to see when it's made, shipped and delivered.</p></div>
         </div></div></section>
-      <section class="block"><div class="wrap split">
-        <div><p class="eyebrow">Not sure what to give?</p><h2>Let us help you choose</h2><p class="muted">Tell us the occasion, who it's for and your budget. Our Gift Finder suggests gifts that fit.</p><a class="btn ghost" href="/finder">Open Gift Finder</a></div>
-        <div class="card"><p class="eyebrow">For companies</p><h3>Corporate & bulk gifts</h3><p class="muted">Eid hampers, client gifts, branded mugs, shields and awards — made in bulk and delivered across Pakistan.</p><a class="btn sm" href="/corporate">Corporate gifting</a></div>
-      </div></section>`;
+`;
     },
 
     "/customize": (q, rest) => {
@@ -356,6 +354,8 @@
   /* ---------- router (clean URLs) ---------- */
   function route(push) {
     let path = location.pathname.replace(/\/index\.html$/, "/").replace(/\.html$/, "").replace(/\/+$/, "") || "/";
+    const moved = { "/finder": "/customize", "/corporate": "/customize" };
+    if (moved[path]) { history.replaceState(null, "", moved[path]); path = moved[path]; }
     const q = new URLSearchParams(location.search), parts = path.split("/").filter(Boolean);
     const key = parts.length ? "/" + parts[0] : "/", rest = parts.slice(1);
     app.innerHTML = (pages[key] || notFound)(q, rest);
@@ -544,7 +544,7 @@
     if (/track|status|order id|gh-/.test(t)) return "Open Track Order and enter your Order ID to see the status.";
     if (/bulk|corporate|company|office/.test(t)) return `For bulk or corporate gifts, message us on WhatsApp: wa.me/${D.whatsapp}`;
     if (/abroad|uk|usa|dubai|overseas|bahar/.test(t)) return "Yes! Order from anywhere — we deliver to your family in Pakistan.";
-    if (/idea|suggest|what.*give|kya doon|gift for/.test(t)) return "Try our Gift Finder — tell us the occasion and who it's for, and we'll suggest gifts.";
+    if (/idea|suggest|what.*give|kya doon|gift for/.test(t)) return "Pick a ready gift box, build your own box, or customize a gift with a name or photo. Need help? Message us on WhatsApp.";
     return `I can help with gifts, prices, delivery and orders. For anything else, WhatsApp us at 0313-0111349.`;
   };
   function chatSay(text, who) { const b = $("#chatBody"); b.insertAdjacentHTML("beforeend", `<div class="msg ${who}"></div>`); b.lastElementChild.textContent = text; b.scrollTop = b.scrollHeight; }

@@ -3,9 +3,7 @@
 <url><loc>https://gifthaveli.navifexpro.com/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/customize</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/build</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/finder</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/track</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/corporate</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/faq</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/about</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/contact</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
@@ -14,8 +12,6 @@
 <url><loc>https://gifthaveli.navifexpro.com/privacy-policy</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/terms</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/category/apparel</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/category/bouquets</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/category/cards</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/category/clocks</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/category/corporate-and-awards</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/category/cushions</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
@@ -31,9 +27,6 @@
 <url><loc>https://gifthaveli.navifexpro.com/category/wedding-and-nikkah</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/product/caps-and-masks</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/product/printed-shirt</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/product/chocolate-bouquet</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/product/greeting-card</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/product/twisting-picture-card</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/product/acrylic-clock</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/product/wall-clock</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/product/wooden-clock</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -61,15 +54,7 @@
 <url><loc>https://gifthaveli.navifexpro.com/product/oval-neon-frame</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/product/photo-frame</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/product/round-acrylic-table-frame</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/product/100-reasons-jar</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/product/acrylic-gift-box</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/product/collage</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/product/explosion-box</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/product/fold-up-photo-box</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/product/hamper</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/product/pop-up-box</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/product/pop-up-chocolate-box</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-<url><loc>https://gifthaveli.navifexpro.com/product/raw-photo</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/product/bar-locket</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/product/broken-heart-pendant</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 <url><loc>https://gifthaveli.navifexpro.com/product/brooch</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
