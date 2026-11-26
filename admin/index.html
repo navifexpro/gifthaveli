@@ -69,7 +69,7 @@ tr.off td{opacity:.45}
     data = j.data; orders = j.orders || []; render();
   }
   function shell(body) {
-    const tabs = [["products", "Products"], ["boxes", "Boxes & box items"], ["ready", "Ready-made boxes"], ["orders", "Orders"], ["settings", "Settings"]];
+    const tabs = [["products", "Products"], ["boxes", "Boxes & box items"], ["ready", "Gift Boxes"], ["orders", "Orders"], ["settings", "Settings"]];
     root.innerHTML = `<header><b>Gift Haveli Admin</b><nav>${tabs.map(([k, n]) => `<button data-t="${k}" class="${tab === k ? "on" : ""}">${n}</button>`).join("")}</nav><span class="sp"></span><a href="/" target="_blank">View website</a><button class="btn sm ghost" id="out" style="color:#fff;border-color:#fff">Log out</button></header>
       <main>${msg ? `<div class="msg">${esc(msg)}</div>` : ""}${body}</main>`;
     msg = "";
@@ -157,7 +157,7 @@ tr.off td{opacity:.45}
 
   /* ---- ready boxes ---- */
   function renderReady() {
-    shell(`<div class="bar"><h2 style="margin:0">Ready-made boxes</h2><span style="flex:1"></span><button class="btn" id="add">+ Add ready box</button></div>
+    shell(`<div class="bar"><h2 style="margin:0">Gift Boxes</h2><span style="flex:1"></span><button class="btn" id="add">+ Add ready box</button></div>
       <table><thead><tr><th></th><th>ID</th><th>Name</th><th>Box</th><th>Items</th><th>Website</th><th></th></tr></thead><tbody>${data.ready.map(r => `<tr class="${r.show ? "" : "off"}"><td>${gal(r)[0] ? `<img src="${src(gal(r)[0])}">` : ""}</td><td>${esc(r.id)}</td><td>${esc(r.name)}</td><td>${esc((allItems().find(x => x.id === r.box) || {}).name || r.box)}</td><td>${r.items.length}</td><td>${r.show ? "Shown" : "Hidden"}</td><td><button class="btn sm ghost" data-er="${esc(r.id)}">Edit</button></td></tr>`).join("")}</tbody></table>`);
     document.querySelectorAll("[data-er]").forEach(b => b.onclick = () => editReady(data.ready.find(r => r.id === b.dataset.er)));
     $("#add").onclick = () => editReady({ id: "", name: "", box: data.boxes[0] && data.boxes[0].id, items: [], desc: "", gallery: [], show: true });
