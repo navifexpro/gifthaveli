@@ -27,6 +27,8 @@
 
   /* ---------- lookups ---------- */
   const all = () => [...D.products, ...D.boxes, ...D.fillers, ...D.addons];
+  // simple (non-customized) items: offered in Make Your Box, not on the Customize pages
+  const SIMPLE = /^(eatables|flowers|apparels|extras|add-ons?)$/i;
   const byId = id => all().find(x => x.id === id);
   const pslug = p => slug(p.name) + (all().filter(x => slug(x.name) === slug(p.name)).length > 1 ? "-" + p.id.toLowerCase() : "");
   const pUrl = p => "/product/" + pslug(p);
@@ -145,7 +147,7 @@
 
     "/customize": (q, rest) => {
       const cat = rest[0] || "all", c = D.categories.find(x => x.id === cat);
-      const list = D.products.filter(p => cat === "all" || slug(p.cat) === cat);
+      const list = D.products.filter(p => !SIMPLE.test(p.cat) && (cat === "all" || slug(p.cat) === cat));
       const name = c ? c.name : "Customized gifts";
       meta(c ? `${c.name} — Customized ${c.name} in Pakistan | Gift Haveli` : "Customized Gifts in Pakistan — Mugs, Frames, Lamps & More | Gift Haveli",
         c ? `Customized ${c.name.toLowerCase()} with your name or photo. See a preview before you order. Delivery all over Pakistan.` : "Customized mugs, frames, lamps, cushions, jewellery, Nikkah items and more. Add a name or photo, see a preview, and we deliver all over Pakistan.",
@@ -232,7 +234,7 @@
       return `<section class="page-head" style="padding-bottom:6px"><div class="wrap"><nav class="crumbs"><a href="/build">Build a box</a> / Step 2</nav><h1>Fill your ${esc(box.name)}</h1></div></section>
       <section style="padding-bottom:70px"><div class="wrap bb">
         <div class="stage" id="stage"></div>
-        <div class="bb-cats" id="bbCats"><p class="eyebrow">Categories</p>${boxCats().map((c, i) => `<button class="bb-cat${i ? "" : " on"}" data-cat="${esc(c)}">${icon(catIcon(c) === "box" ? ({ Eatables: "star", Flowers: "flower", Perfumes: "lamp", "Customized Items": "frame", "Extras": "balloon" })[c] || "box" : catIcon(c))}<span>${esc(c)}</span></button>`).join("")}</div>
+        <div class="bb-cats" id="bbCats"><p class="eyebrow">Categories</p>${boxCats().map((c, i) => `<button class="bb-cat${i ? "" : " on"}" data-cat="${esc(c)}">${icon(catIcon(c) === "box" ? ({ Eatables: "star", Flowers: "flower", Apparels: "lamp", "Customized Items": "frame", "Extras": "balloon" })[c] || "box" : catIcon(c))}<span>${esc(c)}</span></button>`).join("")}</div>
         <div class="bb-items" id="bbItems"></div>
         <div class="bb-foot"><div class="field"><label for="boxText">Name or message for the box (optional)</label><input id="boxText" maxlength="40" placeholder="e.g. Happy Birthday Ammi"></div>
           <button class="btn" id="addBox">Add box to basket</button></div>
@@ -358,7 +360,8 @@
   const notFound = () => { meta("Page not found | Gift Haveli", "This page could not be found.", location.pathname); return `<section class="block"><div class="wrap" style="text-align:center"><h1>We couldn't find that page</h1><p class="muted">It may have moved.</p><a class="btn" href="/">Go to home</a></div></section>`; };
   const related = p => { const r = D.products.filter(x => x.cat === p.cat && x.id !== p.id).slice(0, 4);
     return r.length ? `<div style="margin-top:56px"><h2>More ${esc(p.cat || "gifts")}</h2><div class="grid prods" style="margin-top:18px">${r.map(x => card(x)).join("")}</div></div>` : ""; };
-  const boxCats = () => [...new Set([...D.fillers.map(f => f.cat || "Other"), ...(D.addons.length ? ["Extras"] : [])])];
+  const BOX_ORDER = ["Eatables", "Flowers", "Apparels", "Customized Items", "Extras"];
+  const boxCats = () => [...new Set([...D.fillers.map(f => f.cat || "Other"), ...(D.addons.length ? ["Extras"] : [])])].sort((a, b) => (BOX_ORDER.indexOf(a) + 1 || 50) - (BOX_ORDER.indexOf(b) + 1 || 50));
 
   /* ---------- router (clean URLs) ---------- */
   function route(push) {
@@ -599,7 +602,7 @@
     D.products = c.products; D.boxes = c.boxes; D.fillers = c.fillers; D.addons = c.addons; D.ready = c.ready || [];
     [...D.products, ...D.boxes, ...D.fillers, ...D.addons].forEach(x => { if (!x.gallery || !x.gallery.length) x.gallery = (D.gallery && D.gallery[x.id]) || []; });
     D.ready.forEach(r => { if (!r.gallery || !r.gallery.length) r.gallery = (D.gallery && D.gallery[r.id]) || []; });
-    const names = [...new Set(c.products.map(p => p.cat))].sort((a, b) => (D.catOrder.indexOf(a) + 1 || 99) - (D.catOrder.indexOf(b) + 1 || 99));
+    const names = [...new Set(c.products.filter(p => !SIMPLE.test(p.cat)).map(p => p.cat))].sort((a, b) => (D.catOrder.indexOf(a) + 1 || 99) - (D.catOrder.indexOf(b) + 1 || 99));
     D.categories = names.map(n => ({ id: slug(n), name: n, icon: catIcon(n) }));
   }
   async function load() {
