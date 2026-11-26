@@ -36,7 +36,35 @@ tr.off td{opacity:.45}
 .gal button{position:absolute;top:2px;right:2px;background:#fff;border:0;border-radius:50%;width:22px;height:22px;cursor:pointer}
 .gal .mv{right:auto;left:2px}
 .msg{padding:10px 14px;border-radius:10px;background:#f3e6d3;margin:10px 0}.err{background:#f6d8d2}
-.login{max-width:380px;margin:12vh auto}
+.auth{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);background:#fff}
+.auth-brand{position:relative;overflow:hidden;background:radial-gradient(120% 90% at 0% 0%,#842538 0%,var(--m) 45%,#4a1220 100%);color:var(--c);padding:48px 56px;display:flex;flex-direction:column;justify-content:space-between}
+.auth-brand::after{content:"";position:absolute;right:-120px;bottom:-140px;width:460px;height:560px;border:2px solid rgba(201,162,75,.28);border-radius:230px 230px 0 0;box-shadow:0 0 0 28px rgba(201,162,75,.06),0 0 0 56px rgba(201,162,75,.04)}
+.auth-brand img{height:46px;width:auto;align-self:flex-start;position:relative;z-index:1}
+.auth-brand h1{color:var(--c);font-size:clamp(2rem,3.4vw,3rem);line-height:1.1;max-width:13ch;margin:0 0 14px}
+.auth-brand p{color:#ead7c0;max-width:36ch;line-height:1.6;margin:0}
+.auth-brand small{color:#cdb39a;font-size:.8rem;position:relative;z-index:1}
+.auth-brand .gold{width:56px;height:3px;background:var(--g);border-radius:3px;margin:0 0 22px}
+.auth-form{display:flex;align-items:center;justify-content:center;padding:40px 24px;background:var(--c)}
+.auth-box{width:100%;max-width:400px}
+.auth-box h2{font-size:1.9rem;margin:0 0 6px}.auth-box .sub{color:var(--mu);margin:0 0 26px}
+.fld{display:grid;gap:6px;margin-bottom:16px}.fld>span{font-weight:600;font-size:.85rem}
+.inp{position:relative;display:flex;align-items:center}
+.inp svg{position:absolute;left:13px;width:18px;height:18px;stroke:var(--mu);fill:none;stroke-width:1.8;pointer-events:none}
+.inp input{padding:.8em .9em .8em 2.6em;border-radius:12px;background:#fff;border:1.5px solid #e6d6c0;transition:border-color .15s,box-shadow .15s}
+.inp input:focus{outline:0;border-color:var(--m);box-shadow:0 0 0 4px rgba(106,27,46,.1)}
+.inp .eye{position:absolute;right:8px;background:none;border:0;cursor:pointer;padding:6px;border-radius:8px;display:grid;place-items:center}
+.inp .eye svg{position:static}
+.code input{letter-spacing:.5em;font-size:1.25rem;text-align:center;padding-left:.9em;font-weight:600}
+.row{display:flex;justify-content:space-between;align-items:center;margin:2px 0 22px;font-size:.9rem;gap:10px}
+.chk{display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;font-size:.9rem}.chk input{width:17px;height:17px;accent-color:var(--m);margin:0}
+.lnk{background:none;border:0;color:var(--m);font:600 .9rem "DM Sans";cursor:pointer;padding:0;text-decoration:none}.lnk:hover{text-decoration:underline}
+.btn.wide{width:100%;padding:.9em;font-size:1rem;border-radius:12px;display:flex;justify-content:center;align-items:center;gap:10px}
+.btn.wide:hover{background:#561524}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+.note{padding:11px 14px;border-radius:12px;margin:0 0 18px;font-size:.9rem;line-height:1.45}
+.note.err{background:#f8e0da;color:#7a1d22;border:1px solid #efc3b9}.note.ok{background:#eaf3e4;color:#2f5321;border:1px solid #cfe2c3}
+.auth-foot{margin-top:26px;text-align:center;font-size:.85rem;color:var(--mu)}.auth-foot a{color:var(--mu)}
+@media(max-width:860px){.auth{grid-template-columns:1fr}.auth-brand{padding:26px 24px;min-height:0}.auth-brand h1,.auth-brand p,.auth-brand .gold,.auth-brand small{display:none}.auth-brand::after{width:220px;height:260px;right:-60px;bottom:-150px}.auth-form{align-items:flex-start;padding-top:34px}}
 .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:18px}.stats .card b{font-family:Fraunces;font-size:1.8rem;color:var(--m);display:block}
 .items{display:flex;flex-wrap:wrap;gap:6px}.items label{display:flex;align-items:center;gap:6px;font-weight:400;background:#fff;border:1px solid #eadfcd;border-radius:999px;padding:.3em .8em}.items input{width:auto}
 @media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}td:nth-child(n+6){display:none}}
@@ -50,22 +78,83 @@ tr.off td{opacity:.45}
   const D = window.GH, API = D.api, $ = s => document.querySelector(s), root = $("#root");
   const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const src = r => !r ? "" : /^(p|assets)\//.test(r) ? "/" + r : /^https?:/.test(r) ? r : `https://lh3.googleusercontent.com/d/${r}=w300`;
-  let pass = sessionStorage.getItem("gh_admin") || "", data = null, orders = [], tab = "products", msg = "";
-  const call = async (action, extra = {}) => { const r = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action, pass, ...extra }) }); return r.json(); };
+  const store = { get: () => { try { return localStorage.getItem("gh_tok") || sessionStorage.getItem("gh_tok") || ""; } catch (e) { return ""; } },
+    set: (t, remember) => { try { sessionStorage.removeItem("gh_tok"); localStorage.removeItem("gh_tok"); (remember ? localStorage : sessionStorage).setItem("gh_tok", t); } catch (e) {} },
+    remembered: () => { try { return !!localStorage.getItem("gh_tok"); } catch (e) { return false; } },
+    clear: () => { try { localStorage.removeItem("gh_tok"); sessionStorage.removeItem("gh_tok"); sessionStorage.removeItem("gh_admin"); } catch (e) {} } };
+  let token = store.get(), data = null, orders = [], tab = "products", msg = "", adminUser = "";
+  const call = async (action, extra = {}) => { const r = await fetch(API, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action, token, ...extra }) }); return r.json(); };
+  const ICON = { user: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>',
+    lock: '<svg viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
+    eye: '<svg viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    eyeOff: '<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 5.1A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7a10 10 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>',
+    key: '<svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/></svg>' };
   const TYPES = ["Product", "Main Box", "Box Item", "Add-on"], CUSTOM = ["Both", "Photo", "Text", "None"];
   const allItems = () => [...data.products, ...data.boxes, ...data.fillers, ...data.addons];
   const gal = x => (x.gallery && x.gallery.length) ? x.gallery : (D.gallery[x.id] || []);
 
-  function login(err) {
-    root.innerHTML = `<div class="login card"><h2>Gift Haveli Admin</h2><p style="color:var(--mu)">Enter the admin password.</p>
-      <form id="lf"><input type="password" id="pw" autocomplete="current-password" required><button class="btn" style="margin-top:12px;width:100%">Log in</button></form>${err ? `<p class="msg err">${esc(err)}</p>` : ""}</div>`;
-    $("#lf").onsubmit = async e => { e.preventDefault(); pass = $("#pw").value; const j = await call("admin_login").catch(() => ({ ok: false, error: "Could not reach the server." }));
-      if (j.ok) { sessionStorage.setItem("gh_admin", pass); load(); } else login(j.error); };
+  /* ---- login screens ---- */
+  const savedUser = () => { try { return localStorage.getItem("gh_user") || ""; } catch (e) { return ""; } };
+  const field = (label, name, type, icon, attrs = "") => `<label class="fld"><span>${label}</span><div class="inp">${ICON[icon]}<input name="${name}" type="${type}" ${attrs}>${type === "password" ? `<button type="button" class="eye" aria-label="Show password">${ICON.eye}</button>` : ""}</div></label>`;
+  const note = (n) => n ? `<div class="note ${n.ok ? "ok" : "err"}" role="alert">${esc(n.text)}</div>` : "";
+  function authPage(inner) {
+    root.innerHTML = `<div class="auth"><aside class="auth-brand"><img src="/logo-reverse.svg" alt="Gift Haveli">
+      <div style="position:relative;z-index:1"><div class="gold"></div><h1>Gifts that feel like home.</h1><p>Manage products, prices, gift boxes and orders for Gift Haveli, all in one place.</p></div>
+      <small>Gift Haveli Admin · A Navifex Pro brand</small></aside>
+      <section class="auth-form"><div class="auth-box">${inner}<div class="auth-foot"><a href="/">← Back to website</a></div></div></section></div>`;
+    root.querySelectorAll(".eye").forEach(b => b.onclick = () => { const i = b.previousElementSibling, show = i.type === "password"; i.type = show ? "text" : "password"; b.innerHTML = show ? ICON.eyeOff : ICON.eye; b.setAttribute("aria-label", show ? "Hide password" : "Show password"); });
+  }
+  const busy = (btn, on, label) => { btn.disabled = on; btn.innerHTML = on ? `<span class="spin"></span>Please wait…` : label; };
+  const post = (action, extra) => call(action, extra).catch(() => ({ ok: false, error: "Could not reach the server. Check the internet and try again." }));
+
+  function login(n) {
+    authPage(`<h2>Welcome back</h2><p class="sub">Sign in to the Gift Haveli dashboard.</p>${note(n)}
+      <form id="lf" novalidate>${field("Username", "user", "text", "user", `autocomplete="username" autocapitalize="off" spellcheck="false" required value="${esc(savedUser())}"`)}
+        ${field("Password", "pass", "password", "lock", 'autocomplete="current-password" required')}
+        <div class="row"><label class="chk"><input type="checkbox" name="remember" ${savedUser() ? "checked" : ""}>Remember me</label><button type="button" class="lnk" id="fg">Forgot password?</button></div>
+        <button class="btn wide" id="go">Sign in</button></form>`);
+    const f = $("#lf"); (f.user.value ? f.pass : f.user).focus();
+    $("#fg").onclick = () => forgot(null, f.user.value);
+    f.onsubmit = async e => { e.preventDefault();
+      if (!f.user.value.trim() || !f.pass.value) return login({ text: "Please enter your username and password." });
+      const remember = f.remember.checked, user = f.user.value.trim(); busy($("#go"), true);
+      const j = await post("admin_signin", { user, pass: f.pass.value, remember });
+      if (!j.ok) { login({ text: j.error }); $("#lf").user.value = user; $("#lf").pass.focus(); return; }
+      token = j.token; store.set(token, remember); adminUser = j.user;
+      try { remember ? localStorage.setItem("gh_user", user) : localStorage.removeItem("gh_user"); } catch (e) {}
+      load(); };
+  }
+  function forgot(n, user) {
+    authPage(`<h2>Forgot password?</h2><p class="sub">Enter your username. We will email a 6-digit code to the Gift Haveli email.</p>${note(n)}
+      <form id="ff">${field("Username", "user", "text", "user", `autocomplete="username" autocapitalize="off" spellcheck="false" required value="${esc(user || savedUser())}"`)}
+        <button class="btn wide" id="go">Send code</button></form>
+      <p style="text-align:center;margin-top:18px"><button class="lnk" id="bk">Back to sign in</button></p>`);
+    const f = $("#ff"); f.user.focus(); $("#bk").onclick = () => login();
+    f.onsubmit = async e => { e.preventDefault(); if (!f.user.value.trim()) return;
+      const u = f.user.value.trim(); busy($("#go"), true);
+      const j = await post("admin_forgot", { user: u });
+      j.ok ? reset({ ok: true, text: j.message }, u) : forgot({ text: j.error }, u); };
+  }
+  function reset(n, user) {
+    authPage(`<h2>Set a new password</h2><p class="sub">Enter the code from the email and choose a new password.</p>${note(n)}
+      <form id="rf"><label class="fld code"><span>6-digit code</span><div class="inp"><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required></div></label>
+        ${field("New password", "np", "password", "key", 'autocomplete="new-password" minlength="8" required')}
+        ${field("Confirm new password", "np2", "password", "key", 'autocomplete="new-password" minlength="8" required')}
+        <button class="btn wide" id="go">Change password</button></form>
+      <p style="text-align:center;margin-top:18px;display:flex;justify-content:center;gap:18px"><button class="lnk" id="rs">Send a new code</button><button class="lnk" id="bk">Back to sign in</button></p>`);
+    const f = $("#rf"); f.code.focus(); $("#bk").onclick = () => login(); $("#rs").onclick = () => forgot(null, user);
+    f.onsubmit = async e => { e.preventDefault();
+      if (!/^\d{6}$/.test(f.code.value.trim())) return reset({ text: "The code has 6 numbers." }, user);
+      if (f.np.value.length < 8) return reset({ text: "Use at least 8 characters for the password." }, user);
+      if (f.np.value !== f.np2.value) return reset({ text: "The two passwords do not match." }, user);
+      busy($("#go"), true);
+      const j = await post("admin_reset", { user, code: f.code.value.trim(), newPass: f.np.value });
+      j.ok ? login({ ok: true, text: j.message }) : reset({ text: j.error }, user); };
   }
   async function load() {
     root.innerHTML = `<main><p>Loading…</p></main>`;
     const j = await call("admin_data").catch(() => ({ ok: false, error: "Could not reach the server." }));
-    if (!j.ok) { sessionStorage.removeItem("gh_admin"); return login(j.error); }
+    if (!j.ok) { store.clear(); token = ""; return login({ text: j.error }); }
     data = j.data; orders = j.orders || []; render();
   }
   function shell(body) {
@@ -74,7 +163,7 @@ tr.off td{opacity:.45}
       <main>${msg ? `<div class="msg">${esc(msg)}</div>` : ""}${body}</main>`;
     msg = "";
     document.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { tab = b.dataset.t; render(); });
-    $("#out").onclick = () => { sessionStorage.removeItem("gh_admin"); pass = ""; login(); };
+    $("#out").onclick = () => { post("admin_signout"); store.clear(); token = ""; login({ ok: true, text: "You have been signed out." }); };
   }
   function render() {
     if (tab === "products" || tab === "boxes") return renderList(tab === "products" ? ["Product"] : ["Main Box", "Box Item", "Add-on"]);
@@ -204,13 +293,23 @@ tr.off td{opacity:.45}
         <label style="margin-top:10px">Delivery charge (Rs)<input name="delivery" type="number" value="${s.delivery}"></label>
         <label style="margin-top:10px">Free delivery above (Rs, 0 = never)<input name="freeAbove" type="number" value="${s.freeAbove || 0}"></label>
         <button class="btn" style="margin-top:14px">Save settings</button></form>
-      <form class="card" id="pf"><h3>Change admin password</h3><label>New password (8+ characters)<input type="password" name="np" minlength="8" required></label>
-        <button class="btn" style="margin-top:14px">Change password</button></form></div>`);
+      <form class="card" id="pf"><h3>Login details</h3><p style="color:var(--mu);margin:0 0 12px;font-size:.9rem">Change your username, your password, or both. Password reset codes go to thegifthaveli@gmail.com.</p>
+        <label>Username<input name="nu" value="${esc(adminUser)}" autocomplete="username" pattern="[A-Za-z0-9._-]{3,30}" required></label>
+        <label style="margin-top:10px">New password (leave empty to keep it)<input type="password" name="np" minlength="8" autocomplete="new-password"></label>
+        <label style="margin-top:10px">Current password (needed to save)<input type="password" name="cp" autocomplete="current-password" required></label>
+        <button class="btn" style="margin-top:14px">Save login details</button></form></div>`);
     $("#sf").onsubmit = async e => { e.preventDefault(); const f = new FormData(e.target); const j = await call("admin_settings", { s: { whatsapp: f.get("whatsapp"), delivery: +f.get("delivery"), freeAbove: +f.get("freeAbove") } }); msg = j.ok ? "Settings saved." : j.error; load(); };
-    $("#pf").onsubmit = async e => { e.preventDefault(); const np = new FormData(e.target).get("np"); const j = await call("admin_password", { newPass: np }); if (j.ok) { pass = np; sessionStorage.setItem("gh_admin", np); msg = "Password changed."; } else msg = j.error; render(); };
+    $("#pf").onsubmit = async e => { e.preventDefault(); const f = new FormData(e.target), nu = f.get("nu").trim(), np = f.get("np");
+      const j = await post("admin_account", { curPass: f.get("cp"), newUser: nu !== adminUser ? nu : "", newPass: np, remember: store.remembered() });
+      if (j.ok) { adminUser = j.user; if (j.token) { token = j.token; store.set(token, store.remembered()); } try { if (localStorage.getItem("gh_user")) localStorage.setItem("gh_user", adminUser); } catch (x) {} msg = j.message; }
+      else if (j.expired) { store.clear(); token = ""; return login({ text: j.error }); }
+      else msg = j.error;
+      render(); };
   }
 
-  pass ? load() : login();
+  (async () => { if (!token) return login();
+    const j = await post("admin_session"); if (!j.ok) { store.clear(); token = ""; return login(j.expired ? { text: j.error } : null); }
+    adminUser = j.user; load(); })();
 })();
 </script>
 </body>
